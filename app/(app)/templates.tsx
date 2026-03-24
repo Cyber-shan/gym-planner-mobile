@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native';
 
-export default function HomeScreen() {
+export default function TemplatesScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Home</Text>
-      <Text style={styles.subtitle}>Welcome to Gym Planner</Text>
+      <Text style={styles.title}>Templates</Text>
+      <Text style={styles.subtitle}>Your workout templates will appear here</Text>
     </View>
   );
 }

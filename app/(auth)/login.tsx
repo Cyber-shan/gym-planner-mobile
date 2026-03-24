@@ -11,8 +11,10 @@ import {
 } from "react-native";
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginScreen() {
+  const { login } = useAuth();
   const [isSignUp, setIsSignUp]   = useState(false);
   const [name, setName]           = useState("");
   const [email, setEmail]         = useState("");
@@ -24,6 +26,7 @@ export default function LoginScreen() {
 
   const handleLogin = (emailStr: string, passwordStr: string, nameStr?: string) => {
     console.log("Logging in as:", emailStr);
+    login(emailStr, nameStr || emailStr.split('@')[0]);
     router.replace('/(app)' as any);
   };
 
