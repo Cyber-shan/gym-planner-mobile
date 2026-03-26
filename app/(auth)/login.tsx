@@ -11,10 +11,9 @@ import {
 } from "react-native";
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
-import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
 
 export default function LoginScreen() {
-  const { login } = useAuth();
   const [isSignUp, setIsSignUp]   = useState(false);
   const [name, setName]           = useState("");
   const [email, setEmail]         = useState("");
@@ -24,10 +23,27 @@ export default function LoginScreen() {
   
   const router = useRouter();
 
-  const handleLogin = (emailStr: string, passwordStr: string, nameStr?: string) => {
-    console.log("Logging in as:", emailStr);
-    login(emailStr, nameStr || emailStr.split('@')[0]);
-    router.replace('/(app)' as any);
+  const handleLogin = async (emailStr: string, passwordStr: string, nameStr?: string) => {
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email: emailStr,
+          password: passwordStr,
+          options: { data: { name: nameStr || emailStr.split('@')[0] } }
+        });
+        if (error) throw error;
+        router.replace('/(app)' as any);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: emailStr,
+          password: passwordStr,
+        });
+        if (error) throw error;
+        router.replace('/(app)' as any);
+      }
+    } catch (e: any) {
+      setError(e.message);
+    }
   };
 
   const handleSubmit = () => {
@@ -252,10 +268,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   input: {
-    height: 36,
+    height: 48,
     backgroundColor: '#f3f3f5',
     borderRadius: 8,
     paddingHorizontal: 12,
+    paddingVertical: 0,
     fontSize: 16,
     color: '#0a0a0a',
   },
@@ -264,12 +281,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f3f3f5',
     borderRadius: 8,
-    height: 36,
+    height: 48,
   },
   passwordInput: {
     flex: 1,
     height: '100%',
     paddingHorizontal: 12,
+    paddingVertical: 0,
     fontSize: 16,
     color: '#0a0a0a',
   },
@@ -294,7 +312,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   submitButton: {
-    height: 40,
+    height: 48,
     backgroundColor: '#030213',
     borderRadius: 8,
     alignItems: 'center',

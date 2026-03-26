@@ -41,7 +41,8 @@ function AppHeader() {
 
 export default function AppLayout() {
   const insets = useSafeAreaInsets();
-  const bottomPadding = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'ios' ? 28 : 16);
+  const androidExtra = Platform.OS === 'android' ? 15 : 0;
+  const bottomPadding = (insets.bottom > 0 ? insets.bottom : (Platform.OS === 'ios' ? 28 : 16)) + androidExtra;
   const tabHeight = 50 + bottomPadding;
 
   return (
