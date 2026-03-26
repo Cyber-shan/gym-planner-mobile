@@ -41,7 +41,7 @@ const DUMMY_TEMPLATES: WorkoutTemplate[] = [
 // ────────────────────────────────────────────────────────────────────────
 
 const { width } = Dimensions.get('window');
-const CAROUSEL_ITEM_WIDTH = (width - 32) * 0.85;
+const CAROUSEL_ITEM_WIDTH = Math.min(width, 672) - 32;
 
 // ─── Template Card Component ───
 interface TemplateCardProps {
@@ -114,6 +114,7 @@ export default function TemplatesPage() {
   
   const [templates, setTemplates] = useState(DUMMY_TEMPLATES);
   const [useTemplateId, setUseTemplateId] = useState<string | null>(null);
+  const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
   
   // Format today's date safely natively
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -123,6 +124,14 @@ export default function TemplatesPage() {
 
   const prebuiltTemplates = templates.filter(t => PREBUILT_IDS.includes(t.id));
   const userTemplates = templates.filter(t => !PREBUILT_IDS.includes(t.id));
+
+  const handleScroll = (event: any) => {
+    const slideSize = CAROUSEL_ITEM_WIDTH + 16;
+    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+    if (index !== activeCarouselIndex && index >= 0 && index < prebuiltTemplates.length) {
+      setActiveCarouselIndex(index);
+    }
+  };
 
   const handleUseTemplate = () => {
     if (!useTemplateId) return;
@@ -182,6 +191,8 @@ export default function TemplatesPage() {
               snapToInterval={CAROUSEL_ITEM_WIDTH + 16} 
               decelerationRate="fast" 
               contentContainerStyle={styles.carouselContainer}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
             >
               {prebuiltTemplates.map(template => (
                 <View key={template.id} style={styles.carouselSlide}>
@@ -193,6 +204,19 @@ export default function TemplatesPage() {
                 </View>
               ))}
             </ScrollView>
+
+            {/* Pagination Indicators */}
+            <View style={styles.paginationContainer}>
+              {prebuiltTemplates.map((_, i) => (
+                <View 
+                  key={i} 
+                  style={[
+                    styles.paginationDot, 
+                    activeCarouselIndex === i && styles.paginationDotActive
+                  ]} 
+                />
+              ))}
+            </View>
           </View>
         )}
 
@@ -280,6 +304,9 @@ const styles = StyleSheet.create({
   badgeSolidText: { fontSize: 10, color: '#374151', fontWeight: '500' },
   carouselContainer: { paddingBottom: 8 },
   carouselSlide: { width: CAROUSEL_ITEM_WIDTH, marginRight: 16 },
+  paginationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8 },
+  paginationDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#d1d5db', marginHorizontal: 4 },
+  paginationDotActive: { width: 20, backgroundColor: '#030213' },
   myTemplatesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   savedCountText: { fontSize: 14, color: '#717182' },
   emptyState: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingVertical: 56, paddingHorizontal: 16 },
@@ -305,7 +332,7 @@ const styles = StyleSheet.create({
   categoryBadgeText: { fontSize: 10, color: '#374151', fontWeight: '500' },
   moreExercisesText: { fontSize: 12, color: '#717182', marginLeft: 40, marginTop: 4 },
   cardFooter: { paddingHorizontal: 16, paddingBottom: 16 },
-  useButton: { backgroundColor: '#030213', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 8 },
+  useButton: { backgroundColor: '#030213', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignSelf: 'flex-start' },
   useButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 },

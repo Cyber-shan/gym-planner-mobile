@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
+  const router = useRouter();
   
   // Stub missing contexts for local prototype
   const workouts: any[] = [];
@@ -193,7 +195,10 @@ export default function ProfilePage() {
             <Feather name="trash-2" size={16} color="#ef4444" style={{ marginRight: 8 }} />
             <Text style={styles.dangerButtonOutlineText}>Clear All Workouts</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.dangerButtonSolid} onPress={logout}>
+          <TouchableOpacity style={styles.dangerButtonSolid} onPress={() => {
+            logout();
+            router.replace('/(auth)/login');
+          }}>
             <Feather name="log-out" size={16} color="#ffffff" style={{ marginRight: 8 }} />
             <Text style={styles.dangerButtonSolidText}>Log Out</Text>
           </TouchableOpacity>

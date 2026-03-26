@@ -3,11 +3,13 @@ import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Custom Header Component based on your design
 function AppHeader() {
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const initials = user?.name 
     ? user.name.charAt(0).toUpperCase() 
     : user?.email 
@@ -15,7 +17,7 @@ function AppHeader() {
       : "U";
 
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 20) }]}>
       <View style={styles.headerContent}>
         {/* Logo Section */}
         <TouchableOpacity style={styles.logoButton} onPress={() => router.push('/(app)')}>
@@ -38,6 +40,10 @@ function AppHeader() {
 }
 
 export default function AppLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'ios' ? 28 : 16);
+  const tabHeight = 50 + bottomPadding;
+
   return (
     <Tabs
       screenOptions={{
@@ -45,8 +51,8 @@ export default function AppLayout() {
         tabBarActiveTintColor: '#030213',
         tabBarInactiveTintColor: '#717182',
         tabBarStyle: {
-          height: Platform.OS === 'ios' ? 88 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+          height: tabHeight,
+          paddingBottom: bottomPadding,
           paddingTop: 10,
           backgroundColor: '#ffffff',
           borderTopWidth: 1,
@@ -96,7 +102,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
-    paddingTop: Platform.OS === 'ios' ? 50 : 30, // Simple safe area padding
   },
   headerContent: {
     flexDirection: 'row',
