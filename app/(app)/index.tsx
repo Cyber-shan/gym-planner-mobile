@@ -5,19 +5,44 @@ import { useRouter } from 'expo-router';
 import { StatsStrip } from '../../components/StatsStrip';
 import { WeeklyCalendar } from '../../components/WeeklyCalendar';
 import { AddWorkoutDialog } from '../../components/AddWorkoutDialog';
-import { WorkoutCard, Workout } from '../../components/WorkoutCard';
+import { WorkoutCard } from '../../components/WorkoutCard';
+import { useWorkouts } from '../../contexts/WorkoutContext';
+import { useTemplates } from '../../contexts/TemplateContext';
+import { ActivityIndicator, Alert } from 'react-native';
 
 export default function DashboardPage() {
   const router = useRouter();
   
-  // Dummy data mimicking the missing WorkoutContext
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const { 
+    workouts, 
+    isLoading, 
+    addWorkout, 
+    deleteWorkout, 
+    addExercise, 
+    deleteExercise, 
+    updateExercise 
+  } = useWorkouts();
+
+  const { addTemplate } = useTemplates();
+
   const [completedSessions, setCompletedSessions] = useState<any[]>([]);
   const [isWorkoutDialogOpen, setIsWorkoutDialogOpen] = useState(false);
 
-  const handleAddWorkout = (name: string, date: string) => {
-    setWorkouts([...workouts, { id: Math.random().toString(), date, name, exercises: [] }]);
+  const handleAddWorkout = async (name: string, date: string) => {
+    try {
+      await addWorkout(name, date);
+    } catch (e: any) {
+      Alert.alert("Error", "Failed to create workout: " + e.message);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#030213" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -50,10 +75,7 @@ export default function DashboardPage() {
             <Text style={styles.emptySubtitle}>
               Start building your training routine by creating your first workout plan
             </Text>
-            <TouchableOpacity style={styles.createFirstButton} onPress={() => setIsWorkoutDialogOpen(true)}>
-              <Feather name="plus" size={20} color="white" style={styles.addIcon} />
-              <Text style={styles.createFirstButtonText}>Create Your First Workout</Text>
-            </TouchableOpacity>
+           
           </View>
         ) : (
           <View>
@@ -61,32 +83,19 @@ export default function DashboardPage() {
                 <WorkoutCard
                   key={w.id}
                   workout={w}
-                  onDelete={id => setWorkouts(prev => prev.filter(wk => wk.id !== id))}
-                  onAddExercise={id => {
-                     // dummy add exercise logic
-                     setWorkouts(prev => prev.map(wk => {
-                        if (wk.id === id) {
-                          return { ...wk, exercises: [...wk.exercises, { id: Math.random().toString(), name: "Lat Pulldown", sets: 3, reps: 10, category: "Back" }] };
-                        }
-                        return wk;
-                     }));
+                  onDelete={deleteWorkout}
+                  onAddExercise={addExercise}
+                  onDeleteExercise={deleteExercise}
+                  onEditExercise={updateExercise}
+                  onStartWorkout={(wId) => Alert.alert("Coming Soon", `Starting workout ${wId}`)}
+                  onSaveAsTemplate={async (name, exercises) => {
+                    try {
+                      await addTemplate(name, exercises);
+                      Alert.alert("Success", `Template "${name}" saved!`);
+                    } catch (e: any) {
+                      Alert.alert("Error", "Failed to save template: " + e.message);
+                    }
                   }}
-                  onDeleteExercise={(wId, eId) => {
-                     setWorkouts(prev => prev.map(wk => {
-                        if (wk.id === wId) return { ...wk, exercises: wk.exercises.filter(e => e.id !== eId) };
-                        return wk;
-                     }));
-                  }}
-                  onEditExercise={(wId, eId, updated) => {
-                     setWorkouts(prev => prev.map(wk => {
-                        if (wk.id === wId) {
-                           return { ...wk, exercises: wk.exercises.map(e => e.id === eId ? { ...e, ...updated } : e) };
-                        }
-                        return wk;
-                     }));
-                  }}
-                  onStartWorkout={(wId) => alert(`Starting workout ${wId}`)}
-                  onSaveAsTemplate={(name, exercises) => alert(`Saved template ${name} with ${exercises.length} exercises!`)}
                 />
              ))}
           </View>

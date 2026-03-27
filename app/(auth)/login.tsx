@@ -7,11 +7,13 @@ import {
   StyleSheet, 
   KeyboardAvoidingView, 
   Platform, 
-  ScrollView 
+  ScrollView,
+  Alert
 } from "react-native";
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginScreen() {
   const [isSignUp, setIsSignUp]   = useState(false);
@@ -22,6 +24,7 @@ export default function LoginScreen() {
   const [error, setError]         = useState("");
   
   const router = useRouter();
+  const { loginAsDemo } = useAuth();
 
   const handleLogin = async (emailStr: string, passwordStr: string, nameStr?: string) => {
     try {
@@ -32,7 +35,13 @@ export default function LoginScreen() {
           options: { data: { name: nameStr || emailStr.split('@')[0] } }
         });
         if (error) throw error;
-        router.replace('/(app)' as any);
+        
+        // Prevent auto-login by immediately destroying the session
+        await supabase.auth.signOut();
+        
+        Alert.alert("Success", "Account created successfully! Please sign in to continue.");
+        setIsSignUp(false);
+        setPassword("");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: emailStr,
@@ -172,7 +181,14 @@ export default function LoginScreen() {
 
               <TouchableOpacity 
                 style={styles.demoButton} 
-                onPress={() => handleLogin("demo@example.com", "demo", "Demo User")}
+                onPress={async () => {
+                  try {
+                    await loginAsDemo();
+                    router.replace('/(app)' as any);
+                  } catch (e: any) {
+                    setError("Demo login failed");
+                  }
+                }}
               >
                 <Text style={styles.demoButtonText}>Continue as Demo User</Text>
               </TouchableOpacity>
