@@ -12,6 +12,7 @@ type AuthContextType = {
   session: Session | null;
   user: CustomUser | null;
   logout: () => Promise<void>;
+  loginAsDemo: () => Promise<void>;
   isInitialized: boolean;
 };
 
@@ -54,8 +55,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const loginAsDemo = async () => {
+    // Generate a mock session for the demo user
+    const demoUser = {
+      id: 'demo-user-id',
+      email: 'demo@example.com',
+      name: 'Demo User',
+    };
+    
+    // Create a minimal fake session
+    const mockSession = {
+      access_token: 'mock-token',
+      refresh_token: 'mock-refresh-token',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: {
+        id: demoUser.id,
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: demoUser.email,
+        app_metadata: {},
+        user_metadata: { name: demoUser.name },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    } as Session;
+
+    setSession(mockSession);
+    setUser(demoUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, logout, isInitialized }}>
+    <AuthContext.Provider value={{ session, user, logout, loginAsDemo, isInitialized }}>
       {children}
     </AuthContext.Provider>
   );

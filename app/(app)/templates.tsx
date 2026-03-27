@@ -2,43 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, TextInput, Alert, Dimensions } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useWorkouts } from '../../contexts/WorkoutContext';
+import { useTemplates } from '../../contexts/TemplateContext';
 
-// ─── Stubbed Context types and data ─────────────────────────────────────
-const PREBUILT_IDS = ["seed-t-1", "seed-t-2", "seed-t-3"];
-
+// ─── Types ─────────────────────────────────────────────────────────────
 export type WorkoutTemplate = {
   id: string;
   name: string;
   exercises: { name: string; sets: number; reps: number; category?: string; imageUrl?: string }[];
 };
-
-const DUMMY_TEMPLATES: WorkoutTemplate[] = [
-  {
-    id: "seed-t-1",
-    name: "Full Body Beginner",
-    exercises: [
-      { name: "Squats", sets: 3, reps: 10, category: "Legs" },
-      { name: "Push-ups", sets: 3, reps: 10, category: "Chest" }
-    ]
-  },
-  {
-    id: "seed-t-2",
-    name: "Upper Body Power",
-    exercises: [
-      { name: "Bench Press", sets: 5, reps: 5, category: "Chest" },
-      { name: "Barbell Row", sets: 4, reps: 8, category: "Back" }
-    ]
-  },
-  {
-    id: "user-t-1",
-    name: "My Custom Split",
-    exercises: [
-      { name: "Deadlift", sets: 3, reps: 5, category: "Back" },
-      { name: "Pull-ups", sets: 3, reps: 8, category: "Back" }
-    ]
-  }
-];
-// ────────────────────────────────────────────────────────────────────────
 
 const { width } = Dimensions.get('window');
 const CAROUSEL_ITEM_WIDTH = Math.min(width, 672) - 32;
@@ -111,8 +83,9 @@ function TemplateCard({ template, isPrebuilt, onUse, onDelete }: TemplateCardPro
 // ─── Main Page ───
 export default function TemplatesPage() {
   const router = useRouter();
+  const { createWorkoutFromTemplate } = useWorkouts();
+  const { starterTemplatesList, userTemplatesList, deleteTemplate } = useTemplates();
   
-  const [templates, setTemplates] = useState(DUMMY_TEMPLATES);
   const [useTemplateId, setUseTemplateId] = useState<string | null>(null);
   const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
   
@@ -122,26 +95,29 @@ export default function TemplatesPage() {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   });
 
-  const prebuiltTemplates = templates.filter(t => PREBUILT_IDS.includes(t.id));
-  const userTemplates = templates.filter(t => !PREBUILT_IDS.includes(t.id));
+  const allTemplates = [...starterTemplatesList, ...userTemplatesList];
 
   const handleScroll = (event: any) => {
     const slideSize = CAROUSEL_ITEM_WIDTH + 16;
     const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
-    if (index !== activeCarouselIndex && index >= 0 && index < prebuiltTemplates.length) {
+    if (index !== activeCarouselIndex && index >= 0 && index < starterTemplatesList.length) {
       setActiveCarouselIndex(index);
     }
   };
 
-  const handleUseTemplate = () => {
+  const handleUseTemplate = async () => {
     if (!useTemplateId) return;
-    const template = templates.find(t => t.id === useTemplateId);
+    const template = allTemplates.find(t => t.id === useTemplateId);
     if (!template) return;
     
-    // Simulate createWorkoutFromTemplate
-    Alert.alert("Success", `Workout "${template.name}" created!`);
-    setUseTemplateId(null);
-    router.replace('/(app)');
+    try {
+      await createWorkoutFromTemplate(template.name, selectedDate, template.exercises);
+      Alert.alert("Success", `Workout "${template.name}" created!`);
+      setUseTemplateId(null);
+      router.replace('/(app)');
+    } catch (e: any) {
+      Alert.alert("Error", "Failed to create workout: " + e.message);
+    }
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -153,9 +129,13 @@ export default function TemplatesPage() {
         { 
           text: "Delete", 
           style: "destructive", 
-          onPress: () => {
-             setTemplates(prev => prev.filter(t => t.id !== id));
-             Alert.alert("Success", "Template deleted.");
+          onPress: async () => {
+            try {
+              await deleteTemplate(id);
+              Alert.alert("Success", "Template deleted.");
+            } catch (e: any) {
+              Alert.alert("Error", "Failed to delete template: " + e.message);
+            }
           }
         }
       ]
@@ -168,14 +148,14 @@ export default function TemplatesPage() {
     setSelectedDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
   };
 
-  const selectedTemplate = templates.find(t => t.id === useTemplateId);
+  const selectedTemplate = allTemplates.find(t => t.id === useTemplateId);
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         
         {/* ── Pre-built Templates Horizontal Scroll (replacing Web Carousel) ── */}
-        {prebuiltTemplates.length > 0 && (
+        {starterTemplatesList.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <FontAwesome5 name="magic" size={12} color="#030213" style={{ marginRight: 8 }} />
@@ -194,7 +174,7 @@ export default function TemplatesPage() {
               onScroll={handleScroll}
               scrollEventThrottle={16}
             >
-              {prebuiltTemplates.map(template => (
+              {starterTemplatesList.map(template => (
                 <View key={template.id} style={styles.carouselSlide}>
                   <TemplateCard
                     template={template}
@@ -207,7 +187,7 @@ export default function TemplatesPage() {
 
             {/* Pagination Indicators */}
             <View style={styles.paginationContainer}>
-              {prebuiltTemplates.map((_, i) => (
+              {starterTemplatesList.map((_, i) => (
                 <View 
                   key={i} 
                   style={[
@@ -224,10 +204,10 @@ export default function TemplatesPage() {
         <View style={styles.section}>
           <View style={styles.myTemplatesHeader}>
              <Text style={styles.sectionTitle}>My Templates</Text>
-             <Text style={styles.savedCountText}>{userTemplates.length} saved</Text>
+             <Text style={styles.savedCountText}>{userTemplatesList.length} saved</Text>
           </View>
 
-          {userTemplates.length === 0 ? (
+          {userTemplatesList.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
                 <Feather name="copy" size={32} color="#9ca3af" />
@@ -239,7 +219,7 @@ export default function TemplatesPage() {
             </View>
           ) : (
             <View style={styles.listContainer}>
-              {userTemplates.map(template => (
+              {userTemplatesList.map(template => (
                 <View key={template.id} style={{ marginBottom: 16 }}>
                   <TemplateCard
                     template={template}

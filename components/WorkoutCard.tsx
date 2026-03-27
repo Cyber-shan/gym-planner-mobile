@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { AddExerciseDialog } from './AddExerciseDialog';
 
 export interface Exercise {
   id: string;
@@ -23,7 +24,7 @@ export interface Workout {
 interface WorkoutCardProps {
   workout: Workout;
   onDelete: (id: string) => void;
-  onAddExercise: (workoutId: string) => void;
+  onAddExercise: (workoutId: string, exercise: Omit<Exercise, 'id'>) => void;
   onDeleteExercise: (workoutId: string, exerciseId: string) => void;
   onEditExercise: (workoutId: string, exerciseId: string, updatedExercise: Partial<Exercise>) => void;
   onStartWorkout: (workoutId: string) => void;
@@ -44,6 +45,7 @@ export function WorkoutCard({
   const [editForm, setEditForm] = useState({ sets: 0, reps: 0, weight: "", notes: "" });
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState(workout.name);
+  const [showAddExercise, setShowAddExercise] = useState(false);
 
   const startEdit = (exercise: Exercise) => {
     setEditingId(exercise.id);
@@ -106,7 +108,7 @@ export function WorkoutCard({
           {workout.exercises.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>No exercises added yet</Text>
-              <TouchableOpacity style={styles.addFirstButton} onPress={() => onAddExercise(workout.id)}>
+              <TouchableOpacity style={styles.addFirstButton} onPress={() => setShowAddExercise(true)}>
                 <Feather name="plus" size={16} color="#ffffff" style={{ marginRight: 6 }} />
                 <Text style={styles.addFirstButtonText}>Add First Exercise</Text>
               </TouchableOpacity>
@@ -203,7 +205,7 @@ export function WorkoutCard({
                 </View>
               ))}
 
-              <TouchableOpacity style={styles.addExerciseButton} onPress={() => onAddExercise(workout.id)}>
+              <TouchableOpacity style={styles.addExerciseButton} onPress={() => setShowAddExercise(true)}>
                 <Feather name="plus" size={16} color="#0a0a0a" style={{ marginRight: 6 }} />
                 <Text style={styles.addExerciseButtonText}>Add Exercise</Text>
               </TouchableOpacity>
@@ -223,6 +225,16 @@ export function WorkoutCard({
           )}
         </View>
       )}
+
+      {/* Add Exercise Modal */}
+      <AddExerciseDialog 
+        open={showAddExercise} 
+        onOpenChange={setShowAddExercise} 
+        onAdd={(ex) => {
+          onAddExercise(workout.id, ex);
+          setShowAddExercise(false);
+        }} 
+      />
 
       {/* Save Template Modal */}
       <Modal visible={showTemplateDialog} transparent animationType="fade">
