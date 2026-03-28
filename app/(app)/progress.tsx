@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { FontAwesome5, Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // ─── Native Date Helpers (replacing date-fns) ───────────────
 const parseISO = (dateStr: string) => new Date(dateStr);
 const formatShort = (d: Date) => {
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${months[d.getMonth()]} ${d.getDate()}`;
 };
 const formatLong = (d: Date) => {
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 };
 // ─────────────────────────────────────────────────────────────
@@ -125,12 +125,12 @@ export default function ProgressPage() {
         </View>
       ) : (
         <View style={styles.contentWrap}>
-          
+
           {/* Exercise Selector (Horizontal Chips replacing the Web Dropdown) */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsContainer}>
             {exerciseNames.map((name, i) => (
-              <TouchableOpacity 
-                key={`exercise-${i}-${name}`} 
+              <TouchableOpacity
+                key={`exercise-${i}-${name}`}
                 style={[styles.chip, selectedExercise === name && styles.chipActive]}
                 onPress={() => setSelectedExercise(name)}
               >
@@ -143,7 +143,7 @@ export default function ProgressPage() {
           <View style={styles.prHeader}>
             {isPR && (
               <View style={styles.prBadge}>
-                <FontAwesome5 name="trophy" size={10} color="#ffffff" style={{marginRight: 4}} />
+                <FontAwesome5 name="trophy" size={10} color="#ffffff" style={{ marginRight: 4 }} />
                 <Text style={styles.prBadgeText}>New PR!</Text>
               </View>
             )}
@@ -165,14 +165,14 @@ export default function ProgressPage() {
                   const heightPercent = prValue > 0 ? (d.weight / prValue) * 100 : 0;
                   const isPrBar = d.weight === prValue;
                   return (
-                     <View key={d.id} style={styles.barColumn}>
-                       <Text style={styles.barValue} adjustsFontSizeToFit numberOfLines={1}>{d.weight}</Text>
-                       <View style={[
-                         styles.bar, 
-                         { height: `${heightPercent}%`, backgroundColor: isPrBar ? '#f59e0b' : '#2563eb' }
-                       ]} />
-                       <Text style={styles.barLabel} adjustsFontSizeToFit numberOfLines={1}>{d.date}</Text>
-                     </View>
+                    <View key={d.id} style={styles.barColumn}>
+                      <Text style={styles.barValue} adjustsFontSizeToFit numberOfLines={1}>{d.weight}</Text>
+                      <View style={[
+                        styles.bar,
+                        { height: `${heightPercent}%`, backgroundColor: isPrBar ? '#f59e0b' : '#2563eb' }
+                      ]} />
+                      <Text style={styles.barLabel} adjustsFontSizeToFit numberOfLines={1}>{d.date}</Text>
+                    </View>
                   );
                 })}
               </View>
@@ -187,15 +187,15 @@ export default function ProgressPage() {
           {sessionHistory.length > 0 && (
             <View style={styles.historyCard}>
               <View style={styles.historyHeader}>
-                <Feather name="calendar" size={16} color="#0a0a0a" style={{marginRight: 8}} />
+                <Feather name="calendar" size={16} color="#0a0a0a" style={{ marginRight: 8 }} />
                 <Text style={styles.historyHeaderTitle}>Session History</Text>
               </View>
               <View>
                 {sessionHistory.map((s, index) => (
-                  <View 
-                    key={s.id} 
+                  <View
+                    key={s.id}
                     style={[
-                      styles.historyRow, 
+                      styles.historyRow,
                       index === sessionHistory.length - 1 && { borderBottomWidth: 0 }
                     ]}
                   >

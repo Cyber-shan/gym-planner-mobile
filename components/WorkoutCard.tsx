@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { AddExerciseDialog } from './AddExerciseDialog';
 
 export interface Exercise {
@@ -120,54 +120,54 @@ export function WorkoutCard({
                   {editingId === exercise.id ? (
                     // Edit Form
                     <View style={styles.editForm}>
-                       <Text style={styles.editExerciseName}>{exercise.name}</Text>
-                       <View style={styles.editRow}>
-                         <View style={styles.editCol}>
-                           <Text style={styles.editLabel}>Sets</Text>
-                           <TextInput 
-                             style={styles.editInput} 
-                             value={String(editForm.sets)} 
-                             keyboardType="numeric"
-                             onChangeText={t => setEditForm(p => ({ ...p, sets: parseInt(t) || 0 }))} 
-                           />
-                         </View>
-                         <View style={styles.editCol}>
-                           <Text style={styles.editLabel}>Reps</Text>
-                           <TextInput 
-                             style={styles.editInput} 
-                             value={String(editForm.reps)} 
-                             keyboardType="numeric"
-                             onChangeText={t => setEditForm(p => ({ ...p, reps: parseInt(t) || 0 }))} 
-                           />
-                         </View>
-                         <View style={styles.editCol}>
-                           <Text style={styles.editLabel}>Weight</Text>
-                           <TextInput 
-                             style={styles.editInput} 
-                             value={editForm.weight} 
-                             placeholder="50kg"
-                             onChangeText={t => setEditForm(p => ({ ...p, weight: t }))} 
-                           />
-                         </View>
-                       </View>
-                       <View style={styles.editNotesRow}>
-                         <Text style={styles.editLabel}>Notes</Text>
-                         <TextInput
-                           style={styles.editTextarea}
-                           value={editForm.notes}
-                           onChangeText={t => setEditForm(p => ({ ...p, notes: t }))}
-                           multiline
-                           placeholder="Add notes..."
-                         />
-                       </View>
-                       <View style={styles.editActions}>
-                         <TouchableOpacity style={[styles.editIconButton, { backgroundColor: '#f0fdf4' }]} onPress={() => saveEdit(exercise.id)}>
-                           <Feather name="check" size={16} color="#16a34a" />
-                         </TouchableOpacity>
-                         <TouchableOpacity style={[styles.editIconButton, { backgroundColor: '#fef2f2' }]} onPress={() => setEditingId(null)}>
-                           <Feather name="x" size={16} color="#ef4444" />
-                         </TouchableOpacity>
-                       </View>
+                      <Text style={styles.editExerciseName}>{exercise.name}</Text>
+                      <View style={styles.editRow}>
+                        <View style={styles.editCol}>
+                          <Text style={styles.editLabel}>Sets</Text>
+                          <TextInput
+                            style={styles.editInput}
+                            value={String(editForm.sets)}
+                            keyboardType="numeric"
+                            onChangeText={t => setEditForm(p => ({ ...p, sets: parseInt(t) || 0 }))}
+                          />
+                        </View>
+                        <View style={styles.editCol}>
+                          <Text style={styles.editLabel}>Reps</Text>
+                          <TextInput
+                            style={styles.editInput}
+                            value={String(editForm.reps)}
+                            keyboardType="numeric"
+                            onChangeText={t => setEditForm(p => ({ ...p, reps: parseInt(t) || 0 }))}
+                          />
+                        </View>
+                        <View style={styles.editCol}>
+                          <Text style={styles.editLabel}>Weight</Text>
+                          <TextInput
+                            style={styles.editInput}
+                            value={editForm.weight}
+                            placeholder="50kg"
+                            onChangeText={t => setEditForm(p => ({ ...p, weight: t }))}
+                          />
+                        </View>
+                      </View>
+                      <View style={styles.editNotesRow}>
+                        <Text style={styles.editLabel}>Notes</Text>
+                        <TextInput
+                          style={styles.editTextarea}
+                          value={editForm.notes}
+                          onChangeText={t => setEditForm(p => ({ ...p, notes: t }))}
+                          multiline
+                          placeholder="Add notes..."
+                        />
+                      </View>
+                      <View style={styles.editActions}>
+                        <TouchableOpacity style={[styles.editIconButton, { backgroundColor: '#f0fdf4' }]} onPress={() => saveEdit(exercise.id)}>
+                          <Feather name="check" size={16} color="#16a34a" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.editIconButton, { backgroundColor: '#fef2f2' }]} onPress={() => setEditingId(null)}>
+                          <Feather name="x" size={16} color="#ef4444" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   ) : (
                     // Read-only View
@@ -227,13 +227,13 @@ export function WorkoutCard({
       )}
 
       {/* Add Exercise Modal */}
-      <AddExerciseDialog 
-        open={showAddExercise} 
-        onOpenChange={setShowAddExercise} 
+      <AddExerciseDialog
+        open={showAddExercise}
+        onOpenChange={setShowAddExercise}
         onAdd={(ex) => {
           onAddExercise(workout.id, ex);
           setShowAddExercise(false);
-        }} 
+        }}
       />
 
       {/* Save Template Modal */}
@@ -243,7 +243,7 @@ export function WorkoutCard({
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%', alignItems: 'center' }}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Save as Template</Text>
-                
+
                 <View style={styles.modalBody}>
                   <Text style={styles.modalLabel}>Template Name</Text>
                   <TextInput
@@ -261,8 +261,8 @@ export function WorkoutCard({
                   <TouchableOpacity style={styles.modalCancelButton} onPress={() => setShowTemplateDialog(false)}>
                     <Text style={styles.modalCancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.modalSubmitButton, !templateName.trim() && { opacity: 0.5 }]} 
+                  <TouchableOpacity
+                    style={[styles.modalSubmitButton, !templateName.trim() && { opacity: 0.5 }]}
                     onPress={handleSaveTemplate}
                     disabled={!templateName.trim()}
                   >
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   exerciseDetailsText: { fontSize: 12, color: '#717182' },
   exerciseNotesText: { fontSize: 13, color: '#4b5563', marginTop: 6, fontStyle: 'italic' },
   exerciseActions: { flexDirection: 'row', gap: 0, paddingLeft: 8 },
-  editForm: { },
+  editForm: {},
   editExerciseName: { fontSize: 14, fontWeight: '600', color: '#0a0a0a', marginBottom: 12 },
   editRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   editCol: { flex: 1 },

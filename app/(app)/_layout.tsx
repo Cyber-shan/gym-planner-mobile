@@ -94,6 +94,13 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => <Feather name="user" size={20} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="active-workout/[workoutId]"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 }
