@@ -49,39 +49,30 @@ export default function ActiveWorkoutPage() {
     useCallback(() => {
       if (!workout) return;
 
-      // START/RESET logic
-      // If no progress made, re-sync with latest plan (handles "edit before start")
-      if (completedSetsCount === 0) {
-        startTimeRef.current = new Date();
-        setElapsedTime(0);
-        setRestActive(false);
-        setRestSeconds(DEFAULT_REST);
-        setActiveExercises(workout.exercises.map(e => ({
-          id: e.id,
-          name: e.name,
-          category: e.category,
-          sets: Array.from({ length: e.sets }, (_, i) => ({
-            setNumber: i + 1,
-            plannedReps: e.reps,
-            actualReps: e.reps,
-            weight: e.weight || "",
-            completed: false,
-          })),
-        })));
-      }
+      // Always reset for a fresh session on entry
+      startTimeRef.current = new Date();
+      setElapsedTime(0);
+      setRestActive(false);
+      setRestSeconds(DEFAULT_REST);
+      setActiveExercises(workout.exercises.map(e => ({
+        id: e.id,
+        name: e.name,
+        category: e.category,
+        sets: Array.from({ length: e.sets }, (_, i) => ({
+          setNumber: i + 1,
+          plannedReps: e.reps,
+          actualReps: e.reps,
+          weight: e.weight || "",
+          completed: false,
+        })),
+      })));
 
-      // START timer (only if not already finished)
-      if (completedSetsCount < totalSetsCount || totalSetsCount === 0) {
-        const interval = setInterval(() => {
-          setElapsedTime(Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000));
-        }, 1000);
+      const interval = setInterval(() => {
+        setElapsedTime(Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000));
+      }, 1000);
 
-        return () => {
-          // STOP timer when navigating away
-          clearInterval(interval);
-        };
-      }
-    }, [workoutId, workout, completedSetsCount === 0])
+      return () => clearInterval(interval);
+    }, [workoutId, workout])
   );
 
   // Rest timer logic
@@ -118,6 +109,30 @@ export default function ActiveWorkoutPage() {
       setRestActive(true);
     }
   }, []);
+
+  // Live sync with plan: if exercises are added/deleted before we start, update immediately
+  useEffect(() => {
+    if (!workout || completedSetsCount > 0) return;
+    
+    // Check if lengths differ or IDs differ to avoid infinite loops if objects are recreated
+    const planIds = workout.exercises.map(e => e.id).join(',');
+    const currentIds = activeExercises.map(e => e.id).join(',');
+    
+    if (planIds !== currentIds) {
+      setActiveExercises(workout.exercises.map(e => ({
+        id: e.id,
+        name: e.name,
+        category: e.category,
+        sets: Array.from({ length: e.sets }, (_, i) => ({
+          setNumber: i + 1,
+          plannedReps: e.reps,
+          actualReps: e.reps,
+          weight: e.weight || "",
+          completed: false,
+        })),
+      })));
+    }
+  }, [workout?.exercises, completedSetsCount === 0]);
 
   const handleEndWorkout = () => {
     setRestActive(false);

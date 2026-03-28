@@ -4,6 +4,7 @@ import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useWorkouts } from '../../contexts/WorkoutContext';
 import { useTemplates } from '../../contexts/TemplateContext';
+import { DatePicker } from '../../components/ui/DatePicker';
 
 // ─── Types ─────────────────────────────────────────────────────────────
 export type WorkoutTemplate = {
@@ -247,13 +248,10 @@ export default function TemplatesPage() {
                   <Text style={styles.modalTemplateDetail}>{selectedTemplate.exercises.length} exercises</Text>
                 </View>
                 
-                <Text style={styles.modalLabel}>Workout Date (YYYY-MM-DD)</Text>
-                <TextInput
-                  style={styles.modalInput}
+                <DatePicker 
+                  label="Workout Date"
                   value={selectedDate}
-                  onChangeText={setSelectedDate}
-                  placeholder="YYYY-MM-DD"
-                  keyboardType="numeric"
+                  onChange={setSelectedDate}
                 />
               </View>
             )}
