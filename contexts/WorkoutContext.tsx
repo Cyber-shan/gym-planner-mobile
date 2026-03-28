@@ -95,15 +95,43 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       }));
 
       setWorkouts(formatted);
-    } catch (e: any) {
-      console.error('Failed to fetch workouts:', e.message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const fetchCompletedSessions = async () => {
+    if (!user || isDemo) {
+      setCompletedSessions([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('completed_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formatted: CompletedSession[] = (data || []).map((s: any) => ({
+        id: s.id,
+        workoutId: s.workout_id,
+        workoutName: s.workout_name,
+        date: s.date,
+        completedAt: s.completed_at,
+        durationMinutes: s.duration_minutes,
+        exercises: s.exercises,
+      }));
+      setCompletedSessions(formatted);
+    } catch (e: any) {
+      console.error('Failed to fetch completed sessions:', e.message);
+    }
+  };
+
   useEffect(() => {
     fetchWorkouts();
+    fetchCompletedSessions();
   }, [user]);
 
   const addWorkout = async (name: string, date: string) => {
@@ -292,13 +320,41 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   };
 
   const addCompletedSession = async (sessionPayload: Omit<CompletedSession, 'id'>) => {
+    if (isDemo) {
+      const newSession: CompletedSession = {
+        ...sessionPayload,
+        id: Math.random().toString(36).substr(2, 9),
+      };
+      setCompletedSessions(prev => [newSession, ...prev]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('completed_sessions')
+      .insert({
+        user_id: user?.id,
+        workout_id: sessionPayload.workoutId || null,
+        workout_name: sessionPayload.workoutName,
+        date: sessionPayload.date,
+        completed_at: sessionPayload.completedAt,
+        duration_minutes: sessionPayload.durationMinutes,
+        exercises: sessionPayload.exercises,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
     const newSession: CompletedSession = {
-      ...sessionPayload,
-      id: Math.random().toString(36).substr(2, 9),
+      id: data.id,
+      workoutId: data.workout_id,
+      workoutName: data.workout_name,
+      date: data.date,
+      completedAt: data.completed_at,
+      durationMinutes: data.duration_minutes,
+      exercises: data.exercises,
     };
 
-    // For now, we store sessions in local state. 
-    // In a real app, you'd insert this into a 'completed_sessions' table in Supabase.
     setCompletedSessions(prev => [newSession, ...prev]);
   };
 

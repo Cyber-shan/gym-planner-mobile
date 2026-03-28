@@ -11,6 +11,7 @@ import {
   TextInput, TouchableOpacity,
   View
 } from 'react-native';
+import { getCategoryColor } from '../lib/colors';
 import { exerciseDatabase, ExerciseTemplate } from '../data/exerciseDatabase';
 import { Exercise } from './WorkoutCard';
 
@@ -145,15 +146,13 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
                 <Text style={styles.categoryTitle}>{category}</Text>
                 {exercises.map((ex, i) => (
                   <TouchableOpacity key={i} style={styles.exOption} onPress={() => handleSelectExercise(ex)}>
-                    <View style={styles.exImgWrapper}>
-                      {ex.imageUrl ? (
-                        <Image source={{ uri: ex.imageUrl }} style={styles.exImg} />
-                      ) : (
-                        <Feather name="image" size={20} color="#9ca3af" />
-                      )}
-                    </View>
                     <View style={styles.exInfo}>
-                      <Text style={styles.exName}>{ex.name}</Text>
+                      <View style={styles.exNameRow}>
+                        <Text style={styles.exName}>{ex.name}</Text>
+                        <View style={[styles.badge, { backgroundColor: getCategoryColor(ex.category).bg, marginTop: 0, marginLeft: 8 }]}>
+                          <Text style={[styles.badgeText, { color: getCategoryColor(ex.category).text }]}>{ex.category}</Text>
+                        </View>
+                      </View>
                       <Text style={styles.exDetails}>{ex.defaultSets} sets × {ex.defaultReps} reps</Text>
                     </View>
                   </TouchableOpacity>
@@ -171,17 +170,10 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
         <ScrollView contentContainerStyle={styles.formGroupSpacer}>
           <Text style={styles.label}>Selected Exercise</Text>
           <View style={styles.selectedContent}>
-            <View style={styles.exImgWrapper}>
-              {selectedExercise.imageUrl ? (
-                <Image source={{ uri: selectedExercise.imageUrl }} style={styles.exImg} />
-              ) : (
-                <Feather name="image" size={20} color="#9ca3af" />
-              )}
-            </View>
             <View style={styles.exInfo}>
               <Text style={styles.exName}>{selectedExercise.name}</Text>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{selectedExercise.category}</Text>
+              <View style={[styles.badge, { backgroundColor: getCategoryColor(selectedExercise.category).bg }]}>
+                <Text style={[styles.badgeText, { color: getCategoryColor(selectedExercise.category).text }]}>{selectedExercise.category}</Text>
               </View>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedExercise(null)}>
@@ -384,17 +376,16 @@ const styles = StyleSheet.create({
   categoryBlock: { marginBottom: 12 },
   categoryTitle: { fontSize: 13, fontWeight: '600', color: '#717182', marginBottom: 8, paddingHorizontal: 4 },
   exOption: { flexDirection: 'row', alignItems: 'center', padding: 8, borderRadius: 8 },
-  exImgWrapper: { width: 48, height: 48, backgroundColor: '#f3f4f6', borderRadius: 6, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
-  exImg: { width: '100%', height: '100%' },
-  exInfo: { flex: 1, marginLeft: 12 },
+  exInfo: { flex: 1 },
+  exNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
   exName: { fontSize: 14, fontWeight: '500', color: '#0a0a0a' },
-  exDetails: { fontSize: 12, color: '#717182', marginTop: 2 },
+  exDetails: { fontSize: 12, color: '#717182' },
   emptySearch: { padding: 24, alignItems: 'center' },
   emptySearchText: { color: '#717182', fontSize: 14 },
   input: { height: 44, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, paddingHorizontal: 12, fontSize: 16, color: '#0a0a0a', backgroundColor: '#ffffff' },
   selectedContent: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f9fafb', padding: 12, borderRadius: 8, marginBottom: 16 },
-  badge: { alignSelf: 'flex-start', backgroundColor: '#e5e7eb', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, marginTop: 4 },
-  badgeText: { fontSize: 10, color: '#374151', fontWeight: '500' },
+  badge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, marginTop: 4 },
+  badgeText: { fontSize: 10, fontWeight: '600' },
   closeBtn: { padding: 8 },
   rowGroup: { flexDirection: 'row', marginBottom: 16 },
   colGroup: { flex: 1 },

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, TextInput, Alert, Dimensions } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useWorkouts } from '../../contexts/WorkoutContext';
-import { useTemplates } from '../../contexts/TemplateContext';
+import React, { useState } from 'react';
+import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { DatePicker } from '../../components/ui/DatePicker';
+import { useTemplates } from '../../contexts/TemplateContext';
+import { useWorkouts } from '../../contexts/WorkoutContext';
+import { getCategoryColor } from '../../lib/colors';
 
 // ─── Types ─────────────────────────────────────────────────────────────
 export type WorkoutTemplate = {
@@ -51,16 +52,13 @@ function TemplateCard({ template, isPrebuilt, onUse, onDelete }: TemplateCardPro
       <View style={styles.cardBody}>
         {template.exercises.slice(0, 4).map((ex, i) => (
           <View key={i} style={styles.exerciseRow}>
-            {ex.imageUrl && (
-              <Image source={{ uri: ex.imageUrl }} style={styles.exerciseImage} />
-            )}
             <View style={styles.exerciseInfo}>
               <Text style={styles.exerciseName} numberOfLines={1}>{ex.name}</Text>
               <Text style={styles.exerciseSets}>{ex.sets} × {ex.reps}</Text>
             </View>
             {ex.category && (
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>{ex.category}</Text>
+              <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(ex.category).bg }]}>
+                <Text style={[styles.categoryBadgeText, { color: getCategoryColor(ex.category).text }]}>{ex.category}</Text>
               </View>
             )}
           </View>
@@ -86,14 +84,14 @@ export default function TemplatesPage() {
   const router = useRouter();
   const { createWorkoutFromTemplate } = useWorkouts();
   const { starterTemplatesList, userTemplatesList, deleteTemplate } = useTemplates();
-  
+
   const [useTemplateId, setUseTemplateId] = useState<string | null>(null);
   const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
-  
+
   // Format today's date safely natively
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
 
   const allTemplates = [...starterTemplatesList, ...userTemplatesList];
@@ -110,7 +108,7 @@ export default function TemplatesPage() {
     if (!useTemplateId) return;
     const template = allTemplates.find(t => t.id === useTemplateId);
     if (!template) return;
-    
+
     try {
       await createWorkoutFromTemplate(template.name, selectedDate, template.exercises);
       Alert.alert("Success", `Workout "${template.name}" created!`);
@@ -127,9 +125,9 @@ export default function TemplatesPage() {
       `Delete template "${name}"?`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
-          style: "destructive", 
+        {
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               await deleteTemplate(id);
@@ -146,7 +144,7 @@ export default function TemplatesPage() {
   const openUseDialog = (id: string) => {
     setUseTemplateId(id);
     const d = new Date();
-    setSelectedDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+    setSelectedDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
   };
 
   const selectedTemplate = allTemplates.find(t => t.id === useTemplateId);
@@ -154,7 +152,7 @@ export default function TemplatesPage() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        
+
         {/* ── Pre-built Templates Horizontal Scroll (replacing Web Carousel) ── */}
         {starterTemplatesList.length > 0 && (
           <View style={styles.section}>
@@ -166,11 +164,11 @@ export default function TemplatesPage() {
               </View>
             </View>
 
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              snapToInterval={CAROUSEL_ITEM_WIDTH + 16} 
-              decelerationRate="fast" 
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={CAROUSEL_ITEM_WIDTH + 16}
+              decelerationRate="fast"
               contentContainerStyle={styles.carouselContainer}
               onScroll={handleScroll}
               scrollEventThrottle={16}
@@ -189,12 +187,12 @@ export default function TemplatesPage() {
             {/* Pagination Indicators */}
             <View style={styles.paginationContainer}>
               {starterTemplatesList.map((_, i) => (
-                <View 
-                  key={i} 
+                <View
+                  key={i}
                   style={[
-                    styles.paginationDot, 
+                    styles.paginationDot,
                     activeCarouselIndex === i && styles.paginationDotActive
-                  ]} 
+                  ]}
                 />
               ))}
             </View>
@@ -204,8 +202,8 @@ export default function TemplatesPage() {
         {/* ── My Templates ── */}
         <View style={styles.section}>
           <View style={styles.myTemplatesHeader}>
-             <Text style={styles.sectionTitle}>My Templates</Text>
-             <Text style={styles.savedCountText}>{userTemplatesList.length} saved</Text>
+            <Text style={styles.sectionTitle}>My Templates</Text>
+            <Text style={styles.savedCountText}>{userTemplatesList.length} saved</Text>
           </View>
 
           {userTemplatesList.length === 0 ? (
@@ -232,7 +230,7 @@ export default function TemplatesPage() {
             </View>
           )}
         </View>
-        
+
       </ScrollView>
 
       {/* ── Use Template Modal ── */}
@@ -240,15 +238,15 @@ export default function TemplatesPage() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create Workout from Template</Text>
-            
+
             {selectedTemplate && (
               <View style={styles.modalBody}>
                 <View style={styles.modalTemplateInfo}>
                   <Text style={styles.modalTemplateName}>{selectedTemplate.name}</Text>
                   <Text style={styles.modalTemplateDetail}>{selectedTemplate.exercises.length} exercises</Text>
                 </View>
-                
-                <DatePicker 
+
+                <DatePicker
                   label="Workout Date"
                   value={selectedDate}
                   onChange={setSelectedDate}
@@ -291,7 +289,7 @@ const styles = StyleSheet.create({
   emptyIconContainer: { backgroundColor: '#f3f4f6', padding: 20, borderRadius: 50, marginBottom: 16 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#0a0a0a', marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: '#717182', textAlign: 'center', maxWidth: 320, lineHeight: 20 },
-  listContainer: { },
+  listContainer: {},
   // Card
   card: { backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', backgroundColor: '#f9fafb', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
@@ -302,13 +300,12 @@ const styles = StyleSheet.create({
   deleteButton: { padding: 4 },
   cardBody: { padding: 16, gap: 12 },
   exerciseRow: { flexDirection: 'row', alignItems: 'center' },
-  exerciseImage: { width: 32, height: 32, borderRadius: 4, marginRight: 8, backgroundColor: '#f3f4f6' },
   exerciseInfo: { flex: 1 },
   exerciseName: { fontSize: 14, color: '#0a0a0a', fontWeight: '500' },
   exerciseSets: { fontSize: 12, color: '#717182', marginTop: 2 },
-  categoryBadge: { backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginLeft: 8 },
-  categoryBadgeText: { fontSize: 10, color: '#374151', fontWeight: '500' },
-  moreExercisesText: { fontSize: 12, color: '#717182', marginLeft: 40, marginTop: 4 },
+  categoryBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, marginLeft: 8 },
+  categoryBadgeText: { fontSize: 10, fontWeight: '600' },
+  moreExercisesText: { fontSize: 12, color: '#717182', marginLeft: 8, marginTop: 4 },
   cardFooter: { paddingHorizontal: 16, paddingBottom: 16 },
   useButton: { backgroundColor: '#030213', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignSelf: 'flex-start' },
   useButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },

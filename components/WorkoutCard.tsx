@@ -2,6 +2,7 @@ import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { AddExerciseDialog } from './AddExerciseDialog';
+import { getCategoryColor } from '../lib/colors';
 
 export interface Exercise {
   id: string;
@@ -172,15 +173,12 @@ export function WorkoutCard({
                   ) : (
                     // Read-only View
                     <View style={styles.exerciseRow}>
-                      {exercise.imageUrl && (
-                        <Image source={{ uri: exercise.imageUrl }} style={styles.exerciseImage} />
-                      )}
                       <View style={styles.exerciseContent}>
                         <View style={styles.exerciseTitleRow}>
                           <Text style={styles.exerciseName}>{exercise.name}</Text>
                           {exercise.category && (
-                            <View style={styles.exerciseBadge}>
-                              <Text style={styles.exerciseBadgeText}>{exercise.category}</Text>
+                            <View style={[styles.exerciseBadge, { backgroundColor: getCategoryColor(exercise.category).bg }]}>
+                              <Text style={[styles.exerciseBadgeText, { color: getCategoryColor(exercise.category).text }]}>{exercise.category}</Text>
                             </View>
                           )}
                         </View>
@@ -299,12 +297,11 @@ const styles = StyleSheet.create({
   exerciseList: { gap: 12 },
   exerciseItem: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, backgroundColor: '#f9fafb', padding: 12 },
   exerciseRow: { flexDirection: 'row' },
-  exerciseImage: { width: 64, height: 64, borderRadius: 6, backgroundColor: '#e5e7eb', marginRight: 12 },
   exerciseContent: { flex: 1 },
   exerciseTitleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
   exerciseName: { fontSize: 14, fontWeight: '600', color: '#0a0a0a' },
-  exerciseBadge: { backgroundColor: '#e5e7eb', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
-  exerciseBadgeText: { fontSize: 10, color: '#374151', fontWeight: '500' },
+  exerciseBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
+  exerciseBadgeText: { fontSize: 10, fontWeight: '600' },
   exerciseDetailsRow: { flexDirection: 'row', alignItems: 'center' },
   exerciseDetailsText: { fontSize: 12, color: '#717182' },
   exerciseNotesText: { fontSize: 13, color: '#4b5563', marginTop: 6, fontStyle: 'italic' },

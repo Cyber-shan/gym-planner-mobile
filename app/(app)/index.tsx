@@ -20,12 +20,12 @@ export default function DashboardPage() {
     deleteWorkout, 
     addExercise, 
     deleteExercise, 
-    updateExercise 
+    updateExercise,
+    completedSessions
   } = useWorkouts();
 
   const { addTemplate } = useTemplates();
 
-  const [completedSessions, setCompletedSessions] = useState<any[]>([]);
   const [isWorkoutDialogOpen, setIsWorkoutDialogOpen] = useState(false);
 
   const handleAddWorkout = async (name: string, date: string) => {
