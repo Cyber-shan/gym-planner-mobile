@@ -1,18 +1,17 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActiveExercise, CompletedSession, useWorkouts } from '../../../contexts/WorkoutContext';
 
 function formatTime(seconds: number): string {
@@ -29,40 +28,63 @@ export default function ActiveWorkoutPage() {
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
   const { workouts, addCompletedSession } = useWorkouts();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const workout = workouts.find(w => w.id === workoutId);
 
-  const [activeExercises, setActiveExercises] = useState<ActiveExercise[]>(() => {
-    if (!workout) return [];
-    return workout.exercises.map(e => ({
-      id: e.id,
-      name: e.name,
-      category: e.category,
-      sets: Array.from({ length: e.sets }, (_, i) => ({
-        setNumber: i + 1,
-        plannedReps: e.reps,
-        actualReps: e.reps,
-        weight: e.weight || "",
-        completed: false,
-      })),
-    }));
-  });
-
+  const [activeExercises, setActiveExercises] = useState<ActiveExercise[]>([]);
   const startTimeRef = useRef<Date>(new Date());
   const [elapsedTime, setElapsedTime] = useState(0);
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST);
   const [restActive, setRestActive] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
-  // Elapsed timer
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsedTime(Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const completedSetsCount = activeExercises.reduce(
+    (acc, ex) => acc + ex.sets.filter(s => s.completed).length, 0
+  );
+  const totalSetsCount = activeExercises.reduce((acc, ex) => acc + ex.sets.length, 0);
 
-  // Rest timer
+  // Focus-based lifecycle: Reset timer & Sync plan on entry
+  useFocusEffect(
+    useCallback(() => {
+      if (!workout) return;
+
+      // START/RESET logic
+      // If no progress made, re-sync with latest plan (handles "edit before start")
+      if (completedSetsCount === 0) {
+        startTimeRef.current = new Date();
+        setElapsedTime(0);
+        setRestActive(false);
+        setRestSeconds(DEFAULT_REST);
+        setActiveExercises(workout.exercises.map(e => ({
+          id: e.id,
+          name: e.name,
+          category: e.category,
+          sets: Array.from({ length: e.sets }, (_, i) => ({
+            setNumber: i + 1,
+            plannedReps: e.reps,
+            actualReps: e.reps,
+            weight: e.weight || "",
+            completed: false,
+          })),
+        })));
+      }
+
+      // START timer (only if not already finished)
+      if (completedSetsCount < totalSetsCount || totalSetsCount === 0) {
+        const interval = setInterval(() => {
+          setElapsedTime(Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000));
+        }, 1000);
+
+        return () => {
+          // STOP timer when navigating away
+          clearInterval(interval);
+        };
+      }
+    }, [workoutId, workout, completedSetsCount === 0])
+  );
+
+  // Rest timer logic
   useEffect(() => {
     if (!restActive) return;
     if (restSeconds <= 0) {
@@ -75,11 +97,10 @@ export default function ActiveWorkoutPage() {
     return () => clearTimeout(t);
   }, [restActive, restSeconds]);
 
-
   const handleToggleSet = useCallback((exIdx: number, setIdx: number) => {
     let wasCompleted = false;
     setActiveExercises(prev => {
-      const updated = prev.map((ex, i) => {
+      return prev.map((ex, i) => {
         if (i !== exIdx) return ex;
         return {
           ...ex,
@@ -90,20 +111,13 @@ export default function ActiveWorkoutPage() {
           }),
         };
       });
-      return updated;
     });
 
-    // Start rest if completing a set
     if (!wasCompleted) {
       setRestSeconds(DEFAULT_REST);
       setRestActive(true);
     }
   }, []);
-
-  const completedSetsCount = activeExercises.reduce(
-    (acc, ex) => acc + ex.sets.filter(s => s.completed).length, 0
-  );
-  const totalSetsCount = activeExercises.reduce((acc, ex) => acc + ex.sets.length, 0);
 
   const handleEndWorkout = () => {
     setRestActive(false);
@@ -133,19 +147,19 @@ export default function ActiveWorkoutPage() {
 
   if (!workout) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
+      <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
         <Text style={styles.errorText}>Workout not found.</Text>
         <TouchableOpacity style={styles.errorButton} onPress={() => router.back()}>
           <Text style={styles.errorButtonText}>Go back</Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const allDone = completedSetsCount === totalSetsCount && totalSetsCount > 0;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -332,7 +346,7 @@ export default function ActiveWorkoutPage() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -395,15 +409,15 @@ const styles = StyleSheet.create({
   setRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   setRowDone: { backgroundColor: 'rgba(16, 185, 129, 0.05)' },
   setNumber: { width: 30, fontSize: 14, color: '#717182', fontWeight: '500' },
-  valueWrapper: { 
-    flex: 1, 
-    marginHorizontal: 4, 
-    backgroundColor: '#f3f4f6', 
-    borderWidth: 1, 
-    borderColor: '#d1d5db', 
-    borderRadius: 6, 
-    height: 36, 
-    alignItems: 'center', 
+  valueWrapper: {
+    flex: 1,
+    marginHorizontal: 4,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    height: 36,
+    alignItems: 'center',
     justifyContent: 'center',
     position: 'relative'
   },
