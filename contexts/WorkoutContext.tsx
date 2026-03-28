@@ -1,17 +1,44 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { Exercise, Workout } from '../components/WorkoutCard';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
-import { Workout, Exercise } from '../components/WorkoutCard';
+
+export interface ActiveSet {
+  setNumber: number;
+  plannedReps: number;
+  actualReps: number;
+  weight: string;
+  completed: boolean;
+}
+
+export interface ActiveExercise {
+  id: string;
+  name: string;
+  category?: string;
+  sets: ActiveSet[];
+}
+
+export interface CompletedSession {
+  id: string;
+  workoutId: string;
+  workoutName: string;
+  date: string;
+  completedAt: string;
+  durationMinutes: number;
+  exercises: ActiveExercise[];
+}
 
 type WorkoutContextType = {
   workouts: Workout[];
   isLoading: boolean;
+  completedSessions: CompletedSession[];
   addWorkout: (name: string, date: string) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
   addExercise: (workoutId: string, exercise: Omit<Exercise, 'id'>) => Promise<void>;
   deleteExercise: (workoutId: string, exerciseId: string) => Promise<void>;
   updateExercise: (workoutId: string, exerciseId: string, updated: Partial<Exercise>) => Promise<void>;
   createWorkoutFromTemplate: (name: string, date: string, exercises: any[]) => Promise<void>;
+  addCompletedSession: (session: Omit<CompletedSession, 'id'>) => Promise<void>;
   refreshWorkouts: () => Promise<void>;
 };
 
@@ -20,6 +47,7 @@ const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
 export function WorkoutProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [completedSessions, setCompletedSessions] = useState<CompletedSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const isDemo = user?.id === 'demo-user-id';
@@ -48,7 +76,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      
+
       // Map DB exercises to the Workout interface (image_url -> imageUrl)
       const formatted: Workout[] = (data || []).map((w: any) => ({
         id: w.id,
@@ -65,7 +93,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
           imageUrl: e.image_url
         }))
       }));
-      
+
       setWorkouts(formatted);
     } catch (e: any) {
       console.error('Failed to fetch workouts:', e.message);
@@ -121,8 +149,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
 
     const { data, error } = await supabase
       .from('exercises')
-      .insert({ 
-        workout_id: workoutId, 
+      .insert({
+        workout_id: workoutId,
         name: exercisePayload.name,
         sets: exercisePayload.sets,
         reps: exercisePayload.reps,
@@ -137,14 +165,14 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
 
     const mappedData: Exercise = {
-       id: data.id,
-       name: data.name,
-       sets: data.sets,
-       reps: data.reps,
-       weight: data.weight,
-       notes: data.notes,
-       category: data.category,
-       imageUrl: data.image_url
+      id: data.id,
+      name: data.name,
+      sets: data.sets,
+      reps: data.reps,
+      weight: data.weight,
+      notes: data.notes,
+      category: data.category,
+      imageUrl: data.image_url
     };
 
     setWorkouts(prev => prev.map(w => {
@@ -190,8 +218,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
 
     const dbPayload: any = { ...updated };
     if (dbPayload.imageUrl !== undefined) {
-       dbPayload.image_url = dbPayload.imageUrl;
-       delete dbPayload.imageUrl;
+      dbPayload.image_url = dbPayload.imageUrl;
+      delete dbPayload.imageUrl;
     }
 
     const { error } = await supabase.from('exercises').update(dbPayload).eq('id', exerciseId);
@@ -199,7 +227,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
 
     setWorkouts(prev => prev.map(w => {
       if (w.id === workoutId) {
-         return { ...w, exercises: w.exercises.map(e => e.id === exerciseId ? { ...e, ...updated } : e) };
+        return { ...w, exercises: w.exercises.map(e => e.id === exerciseId ? { ...e, ...updated } : e) };
       }
       return w;
     }));
@@ -207,11 +235,11 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
 
   const createWorkoutFromTemplate = async (name: string, date: string, templateExercises: any[]) => {
     if (isDemo) {
-      const dummy: Workout = { 
-        id: Math.random().toString(), 
-        name, 
-        date, 
-        exercises: templateExercises.map(e => ({...e, id: Math.random().toString()})) 
+      const dummy: Workout = {
+        id: Math.random().toString(),
+        name,
+        date,
+        exercises: templateExercises.map(e => ({ ...e, id: Math.random().toString() }))
       };
       setWorkouts(prev => [dummy, ...prev]);
       return;
@@ -263,16 +291,29 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addCompletedSession = async (sessionPayload: Omit<CompletedSession, 'id'>) => {
+    const newSession: CompletedSession = {
+      ...sessionPayload,
+      id: Math.random().toString(36).substr(2, 9),
+    };
+
+    // For now, we store sessions in local state. 
+    // In a real app, you'd insert this into a 'completed_sessions' table in Supabase.
+    setCompletedSessions(prev => [newSession, ...prev]);
+  };
+
   return (
     <WorkoutContext.Provider value={{
       workouts,
       isLoading,
+      completedSessions,
       addWorkout,
       deleteWorkout,
       addExercise,
       deleteExercise,
       updateExercise,
       createWorkoutFromTemplate,
+      addCompletedSession,
       refreshWorkouts: fetchWorkouts,
     }}>
       {children}

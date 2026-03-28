@@ -87,7 +87,7 @@ export default function DashboardPage() {
                   onAddExercise={addExercise}
                   onDeleteExercise={deleteExercise}
                   onEditExercise={updateExercise}
-                  onStartWorkout={(wId) => Alert.alert("Coming Soon", `Starting workout ${wId}`)}
+                  onStartWorkout={(wId) => router.push({ pathname: '/(app)/active-workout/[workoutId]', params: { workoutId: wId } })}
                   onSaveAsTemplate={async (name, exercises) => {
                     try {
                       await addTemplate(name, exercises);
