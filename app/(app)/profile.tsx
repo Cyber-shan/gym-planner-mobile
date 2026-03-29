@@ -4,20 +4,18 @@ import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
 
+import { useSettings } from '../../contexts/SettingsContext';
+import { useWorkouts } from '../../contexts/WorkoutContext';
+
 export default function ProfilePage() {
   const { user, logout } = useAuth();
+  const { workouts, completedSessions, totalPRsCount, clearAllWorkouts } = useWorkouts();
+  const { weightUnit, weekStartsOn, updateWeightUnit, updateWeekStartsOn } = useSettings();
   const router = useRouter();
-  
-  // Stub missing contexts for local prototype
-  const workouts: any[] = [];
-  const completedSessions: any[] = [];
-  const clearAllWorkouts = () => {};
 
   const [displayName, setDisplayName] = useState(user?.name || "");
   const [notifications, setNotifications] = useState(true);
   const [restReminders, setRestReminders] = useState(true);
-  const [weekStart, setWeekStart] = useState("monday");
-  const [weightUnit, setWeightUnit] = useState("kg");
 
   useEffect(() => { setDisplayName(user?.name || ""); }, [user?.name]);
 
@@ -84,7 +82,7 @@ export default function ProfilePage() {
           <View style={[styles.statIconBadge, { backgroundColor: '#fefce8' }]}>
             <FontAwesome5 name="trophy" size={14} color="#ca8a04" />
           </View>
-          <Text style={styles.statValue}>—</Text>
+          <Text style={styles.statValue}>{totalPRsCount}</Text>
           <Text style={styles.statLabel}>PRs Set</Text>
         </View>
       </View>
@@ -134,9 +132,9 @@ export default function ProfilePage() {
             </View>
              <TouchableOpacity 
                style={styles.pickerStub} 
-               onPress={() => setWeekStart(w => w === 'monday' ? 'sunday' : 'monday')}
+               onPress={() => updateWeekStartsOn(weekStartsOn === 'monday' ? 'sunday' : 'monday')}
              >
-               <Text style={styles.pickerStubText}>{weekStart}</Text>
+               <Text style={styles.pickerStubText}>{weekStartsOn}</Text>
                <Feather name="chevron-down" size={14} color="#717182" />
              </TouchableOpacity>
           </View>
@@ -146,7 +144,7 @@ export default function ProfilePage() {
             </View>
              <TouchableOpacity 
                style={styles.pickerStub} 
-               onPress={() => setWeightUnit(u => u === 'kg' ? 'lbs' : 'kg')}
+               onPress={() => updateWeightUnit(weightUnit === 'kg' ? 'lb' : 'kg')}
              >
                <Text style={styles.pickerStubText}>{weightUnit}</Text>
                <Feather name="chevron-down" size={14} color="#717182" />

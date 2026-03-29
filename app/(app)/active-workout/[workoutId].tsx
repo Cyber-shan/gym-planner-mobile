@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActiveExercise, CompletedSession, useWorkouts } from '../../../contexts/WorkoutContext';
+import { useSettings } from '../../../contexts/SettingsContext';
 import { getCategoryColor } from '../../../lib/colors';
+import { stripUnit } from '../../../lib/utils';
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -28,6 +30,7 @@ const DEFAULT_REST = 60;
 export default function ActiveWorkoutPage() {
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
   const { workouts, addCompletedSession } = useWorkouts();
+  const { weightUnit, convertToDisplay, convertToStorage } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -65,7 +68,7 @@ export default function ActiveWorkoutPage() {
           setNumber: i + 1,
           plannedReps: e.reps,
           actualReps: e.reps,
-          weight: e.weight || "",
+          weight: e.weight ? String(convertToDisplay(e.weight)) : "",
           completed: false,
         })),
       })));
@@ -139,7 +142,7 @@ export default function ActiveWorkoutPage() {
           setNumber: i + 1,
           plannedReps: e.reps,
           actualReps: e.reps,
-          weight: e.weight || "",
+          weight: e.weight ? String(convertToDisplay(e.weight)) : "",
           completed: false,
         })),
       })));
@@ -163,7 +166,10 @@ export default function ActiveWorkoutPage() {
         id: ae.id,
         name: ae.name,
         category: ae.category,
-        sets: ae.sets,
+        sets: ae.sets.map(s => ({
+          ...s,
+          weight: s.weight.toLowerCase() === 'bodyweight' ? 'Bodyweight' : String(convertToStorage(s.weight))
+        })),
       })),
     };
     await addCompletedSession(session);
@@ -264,7 +270,7 @@ export default function ActiveWorkoutPage() {
               <View style={styles.tableHeader}>
                 <Text style={[styles.tableLabel, { width: 30 }]}>Set</Text>
                 <Text style={[styles.tableLabel, { flex: 1, textAlign: 'center' }]}>Reps</Text>
-                <Text style={[styles.tableLabel, { flex: 1.5, textAlign: 'center' }]}>Weight</Text>
+                <Text style={[styles.tableLabel, { flex: 1.5, textAlign: 'center' }]}>{weightUnit}</Text>
                 <Text style={[styles.tableLabel, { width: 40, textAlign: 'right' }]}>Done</Text>
               </View>
 
@@ -282,9 +288,13 @@ export default function ActiveWorkoutPage() {
                   </View>
 
                   <View style={styles.valueWrapper}>
-                    <Text style={styles.valueText}>{set.weight || '0'} <Text style={styles.unitText}>kg</Text></Text>
+                    <Text style={styles.valueText}>
+                      {stripUnit(set.weight) || '0'} 
+                      {set.weight?.toLowerCase() !== 'bodyweight' && <Text style={styles.unitText}> {weightUnit}</Text>}
+                    </Text>
                     <Feather name="lock" size={8} color="#9ca3af" style={styles.lockIcon} />
                   </View>
+ village
 
                   <TouchableOpacity
                     style={[styles.checkButton, set.completed && styles.checkButtonDone]}

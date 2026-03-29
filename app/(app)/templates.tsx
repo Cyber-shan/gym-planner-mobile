@@ -5,13 +5,15 @@ import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, Touchabl
 import { DatePicker } from '../../components/ui/DatePicker';
 import { useTemplates } from '../../contexts/TemplateContext';
 import { useWorkouts } from '../../contexts/WorkoutContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { getCategoryColor } from '../../lib/colors';
+import { stripUnit } from '../../lib/utils';
 
 // ─── Types ─────────────────────────────────────────────────────────────
 export type WorkoutTemplate = {
   id: string;
   name: string;
-  exercises: { name: string; sets: number; reps: number; category?: string; imageUrl?: string }[];
+  exercises: { name: string; sets: number; reps: number; category?: string; imageUrl?: string; weight?: string }[];
 };
 
 const { width } = Dimensions.get('window');
@@ -26,6 +28,7 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ template, isPrebuilt, onUse, onDelete }: TemplateCardProps) {
+  const { weightUnit, convertToDisplay } = useSettings();
   return (
     <View style={styles.card}>
       {/* Header */}
@@ -54,7 +57,10 @@ function TemplateCard({ template, isPrebuilt, onUse, onDelete }: TemplateCardPro
           <View key={i} style={styles.exerciseRow}>
             <View style={styles.exerciseInfo}>
               <Text style={styles.exerciseName} numberOfLines={1}>{ex.name}</Text>
-              <Text style={styles.exerciseSets}>{ex.sets} × {ex.reps}</Text>
+              <Text style={styles.exerciseSets}>
+                {ex.sets} × {ex.reps}
+                {ex.weight ? ` • ${convertToDisplay(ex.weight)}${ex.weight.toLowerCase() !== 'bodyweight' ? ` ${weightUnit}` : ''}` : ''}
+              </Text>
             </View>
             {ex.category && (
               <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(ex.category).bg }]}>

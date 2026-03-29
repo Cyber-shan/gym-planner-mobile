@@ -8,12 +8,15 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput, TouchableOpacity,
-  View
+  TextInput, 
+  TouchableOpacity,
+  View,
+  SectionList
 } from 'react-native';
 import { getCategoryColor } from '../lib/colors';
 import { exerciseDatabase, ExerciseTemplate } from '../data/exerciseDatabase';
 import { Exercise } from './WorkoutCard';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface AddExerciseDialogProps {
   open: boolean;
@@ -22,6 +25,7 @@ interface AddExerciseDialogProps {
 }
 
 export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDialogProps) {
+  const { weightUnit, convertToStorage } = useSettings();
   const [flowStep, setFlowStep] = useState<"select" | "browse" | "custom">("select");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedExercise, setSelectedExercise] = useState<ExerciseTemplate | null>(null);
@@ -39,13 +43,18 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
     );
   }, [searchQuery]);
 
-  const exercisesByCategory = useMemo(() => {
+  const sections = useMemo(() => {
     const grouped: Record<string, ExerciseTemplate[]> = {};
     filteredExercises.forEach((ex) => {
       if (!grouped[ex.category]) grouped[ex.category] = [];
       grouped[ex.category].push(ex);
     });
-    return grouped;
+    
+    const categories = Object.keys(grouped).sort();
+    return categories.map(cat => ({
+      title: cat,
+      data: grouped[cat]
+    }));
   }, [filteredExercises]);
 
   const handleSelectExercise = (ex: ExerciseTemplate) => {
@@ -53,6 +62,7 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
     setCustomName("");
     setSets(ex.defaultSets.toString());
     setReps(ex.defaultReps.toString());
+    setWeight(ex.defaultWeight || "");
   };
 
   const handleSubmit = () => {
@@ -62,7 +72,7 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
         name: finalName,
         sets: parseInt(sets) || 3,
         reps: parseInt(reps) || 10,
-        weight: weight || undefined,
+        weight: weight?.toLowerCase() === 'bodyweight' ? 'Bodyweight' : (weight ? String(convertToStorage(weight)) : undefined),
         notes: notes || undefined,
         imageUrl: selectedExercise?.imageUrl,
         category: selectedExercise?.category,
@@ -140,31 +150,38 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
             />
           </View>
 
-          <ScrollView style={styles.scrollArea}>
-            {Object.entries(exercisesByCategory).map(([category, exercises]) => (
-              <View key={category} style={styles.categoryBlock}>
-                <Text style={styles.categoryTitle}>{category}</Text>
-                {exercises.map((ex, i) => (
-                  <TouchableOpacity key={i} style={styles.exOption} onPress={() => handleSelectExercise(ex)}>
-                    <View style={styles.exInfo}>
-                      <View style={styles.exNameRow}>
-                        <Text style={styles.exName}>{ex.name}</Text>
-                        <View style={[styles.badge, { backgroundColor: getCategoryColor(ex.category).bg, marginTop: 0, marginLeft: 8 }]}>
-                          <Text style={[styles.badgeText, { color: getCategoryColor(ex.category).text }]}>{ex.category}</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.exDetails}>{ex.defaultSets} sets × {ex.defaultReps} reps</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ))}
-            {filteredExercises.length === 0 && (
-              <View style={styles.emptySearch}>
-                <Text style={styles.emptySearchText}>No exercises found. Try a different search term.</Text>
+          <SectionList
+            sections={sections}
+            keyExtractor={(item, index) => item.name + index}
+            stickySectionHeadersEnabled={false}
+            style={styles.scrollArea}
+            contentContainerStyle={{ paddingBottom: 16 }}
+            renderSectionHeader={({ section: { title } }) => (
+              <View style={styles.categoryHeader}>
+                <Text style={styles.categoryTitle}>{title}</Text>
               </View>
             )}
-          </ScrollView>
+            renderItem={({ item: ex }) => (
+              <TouchableOpacity style={styles.exOption} onPress={() => handleSelectExercise(ex)}>
+                <View style={styles.exInfo}>
+                  <View style={styles.exNameRow}>
+                    <Text style={styles.exName}>{ex.name}</Text>
+                    <View style={[styles.badge, { backgroundColor: getCategoryColor(ex.category).bg, marginTop: 0, marginLeft: 8 }]}>
+                      <Text style={[styles.badgeText, { color: getCategoryColor(ex.category).text }]}>{ex.category}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.exDetails}>{ex.defaultSets} sets × {ex.defaultReps} reps</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              filteredExercises.length === 0 ? (
+                <View style={styles.emptySearch}>
+                  <Text style={styles.emptySearchText}>No exercises found. Try a different search term.</Text>
+                </View>
+              ) : null
+            }
+          />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.formGroupSpacer}>
@@ -193,10 +210,10 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Weight (optional)</Text>
+            <Text style={styles.label}>Weight (optional, in {weightUnit})</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g., 60kg or 135lbs"
+              placeholder={weightUnit === 'kg' ? "e.g., 60kg" : "e.g., 135lbs"}
               value={weight}
               onChangeText={setWeight}
             />
@@ -269,10 +286,10 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Weight (optional)</Text>
+          <Text style={styles.label}>Weight (optional, in {weightUnit})</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g., 60kg or 135lbs"
+            placeholder={weightUnit === 'kg' ? "e.g., 60kg" : "e.g., 135lbs"}
             value={weight}
             onChangeText={setWeight}
           />
@@ -373,8 +390,8 @@ const styles = StyleSheet.create({
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, height: '100%', fontSize: 16 },
   scrollArea: { height: 250, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 8, marginBottom: 16 },
-  categoryBlock: { marginBottom: 12 },
-  categoryTitle: { fontSize: 13, fontWeight: '600', color: '#717182', marginBottom: 8, paddingHorizontal: 4 },
+  categoryHeader: { backgroundColor: '#030213', paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20, alignSelf: 'flex-start', marginVertical: 12, marginLeft: 4 },
+  categoryTitle: { fontSize: 13, fontWeight: '800', color: '#ffffff', textTransform: 'uppercase', letterSpacing: 0.8 },
   exOption: { flexDirection: 'row', alignItems: 'center', padding: 8, borderRadius: 8 },
   exInfo: { flex: 1 },
   exNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },

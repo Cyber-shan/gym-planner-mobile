@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useSettings } from '../contexts/SettingsContext';
 
 export interface Workout {
   id: string;
@@ -34,14 +35,21 @@ const isToday = (d: Date) => {
 // ────────────────────────────────────────────────────────────────────
 
 export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarProps) {
+  const { weekStartsOn } = useSettings();
+
   const days = useMemo(() => {
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
     
-    // Adjust to make Monday the start of the week:
-    const diffToMonday = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    // Calculate start of week based on user preference
+    let diff = 0;
+    if (weekStartsOn === 'monday') {
+      diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    } else {
+      diff = today.getDate() - dayOfWeek;
+    }
     
-    const weekStart = new Date(today.getFullYear(), today.getMonth(), diffToMonday);
+    const weekStart = new Date(today.getFullYear(), today.getMonth(), diff);
     weekStart.setHours(0,0,0,0);
 
     return Array.from({ length: 7 }, (_, i) => {
@@ -49,9 +57,11 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
       d.setDate(d.getDate() + i);
       return d;
     });
-  }, []);
+  }, [weekStartsOn]);
 
-  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayLabels = weekStartsOn === 'monday' 
+    ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <View style={styles.card}>

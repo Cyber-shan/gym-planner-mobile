@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { isSameWeek, startOfWeek, subWeeks, parseISO, isSameDay, subDays, startOfDay } from 'date-fns';
+import { useSettings } from '../contexts/SettingsContext';
 
 export interface Workout {
   id: string;
@@ -61,6 +62,7 @@ function StatCard({ icon, label, value, sub, colorBg }: StatCardProps) {
 }
 
 export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
+  const { weightUnit, convertToDisplay } = useSettings();
   const stats = useMemo(() => {
     const now = new Date();
     
@@ -97,8 +99,11 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
     });
 
     const formatVolume = (v: number) => {
-      if (v >= 1000) return `${(v / 1000).toFixed(1)} t`;
-      return `${Math.round(v)} kg`;
+      const displayVolume = convertToDisplay(v);
+      if (displayVolume >= 1000) {
+        return `${(displayVolume / 1000).toFixed(1)} ${weightUnit === 'kg' ? 't' : 'klb'}`;
+      }
+      return `${Math.round(displayVolume)} ${weightUnit}`;
     };
 
     // 3. Streak (Daily based, converts to weeks at 7)
@@ -165,7 +170,7 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
       streak: formatStreak(streakDays),
       topMuscle: topMuscle.length > 8 ? topMuscle.substring(0, 8) + '...' : topMuscle,
     };
-  }, [workouts, sessions]);
+  }, [workouts, sessions, weightUnit, convertToDisplay]);
 
   return (
     <View style={styles.container}>

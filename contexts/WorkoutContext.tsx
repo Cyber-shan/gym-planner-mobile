@@ -1,5 +1,6 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { Exercise, Workout } from '../components/WorkoutCard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -32,8 +33,12 @@ type WorkoutContextType = {
   workouts: Workout[];
   isLoading: boolean;
   completedSessions: CompletedSession[];
+  exercisesWithRecentPRs: string[];
+  totalPRsCount: number;
+  markPRAsSeen: (name: string) => void;
   addWorkout: (name: string, date: string) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
+  clearAllWorkouts: () => Promise<void>;
   addExercise: (workoutId: string, exercise: Omit<Exercise, 'id'>) => Promise<void>;
   deleteExercise: (workoutId: string, exerciseId: string) => Promise<void>;
   updateExercise: (workoutId: string, exerciseId: string, updated: Partial<Exercise>) => Promise<void>;
@@ -134,6 +139,28 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     fetchCompletedSessions();
   }, [user]);
 
+  // Handle seen PRs persistence
+  useEffect(() => {
+    if (user?.id) {
+      const loadSeenPRs = async () => {
+        try {
+          const key = `@seen_prs_${user.id}`;
+          const stored = await AsyncStorage.getItem(key);
+          if (stored) {
+            setSeenPRs(JSON.parse(stored));
+          } else {
+            setSeenPRs({});
+          }
+        } catch (e) {
+          console.error('Failed to load seen PRs:', e);
+        }
+      };
+      loadSeenPRs();
+    } else {
+      setSeenPRs({});
+    }
+  }, [user?.id]);
+
   const addWorkout = async (name: string, date: string) => {
     if (isDemo) {
       const dummy: Workout = { id: Math.random().toString(), name, date, exercises: [] };
@@ -162,6 +189,25 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.from('workouts').delete().eq('id', id);
     if (error) throw error;
     setWorkouts(prev => prev.filter(w => w.id !== id));
+  };
+  
+  const clearAllWorkouts = async () => {
+    if (isDemo) {
+      setWorkouts([]);
+      setCompletedSessions([]);
+      return;
+    }
+    
+    // Delete all user workouts (cascades to exercises)
+    const { error: wError } = await supabase.from('workouts').delete().eq('user_id', user?.id);
+    if (wError) throw wError;
+    
+    // Delete all completed sessions
+    const { error: sError } = await supabase.from('completed_sessions').delete().eq('user_id', user?.id);
+    if (sError) throw sError;
+    
+    setWorkouts([]);
+    setCompletedSessions([]);
   };
 
   const addExercise = async (workoutId: string, exercisePayload: Omit<Exercise, 'id'>) => {
@@ -358,13 +404,118 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setCompletedSessions(prev => [newSession, ...prev]);
   };
 
+  const [seenPRs, setSeenPRs] = useState<Record<string, number>>({});
+
+  const exercisesWithRecentPRs = React.useMemo(() => {
+    const prMap = new Map<string, { maxWeight: number; latestSessionDate: string; prSessionDate: string }>();
+
+    completedSessions.forEach(session => {
+      session.exercises.forEach(ex => {
+        const completedSets = ex.sets.filter(s => s.completed);
+        if (completedSets.length === 0) return;
+
+        const sessionMax = Math.max(...completedSets.map(s => parseFloat(s.weight) || 0));
+        const current = prMap.get(ex.name);
+
+        if (!current) {
+          prMap.set(ex.name, {
+            maxWeight: sessionMax,
+            latestSessionDate: session.date,
+            prSessionDate: session.date
+          });
+        } else {
+          if (session.date > current.latestSessionDate) {
+            current.latestSessionDate = session.date;
+          }
+          if (sessionMax > current.maxWeight) {
+            current.maxWeight = sessionMax;
+            current.prSessionDate = session.date;
+          } else if (sessionMax === current.maxWeight) {
+            if (session.date > current.prSessionDate) {
+              current.prSessionDate = session.date;
+            }
+          }
+        }
+      });
+    });
+
+    return Array.from(prMap.entries())
+      .filter(([name, data]) => {
+        if (data.maxWeight <= 0) return false;
+        const lastSeenWeight = seenPRs[name] || 0;
+        return data.maxWeight > lastSeenWeight;
+      })
+      .map(([name]) => name);
+  }, [completedSessions, seenPRs]);
+
+  const totalPRsCount = React.useMemo(() => {
+    let count = 0;
+    const records = new Map<string, number>();
+    
+    // Sort chronologically to count PR milestones
+    const sorted = [...completedSessions].sort((a, b) => a.date.localeCompare(b.date));
+    
+    sorted.forEach(session => {
+      session.exercises.forEach(ex => {
+        const completedSets = ex.sets.filter(s => s.completed);
+        if (completedSets.length === 0) return;
+        
+        const sessionMax = Math.max(...completedSets.map(s => parseFloat(s.weight) || 0));
+        const record = records.get(ex.name) || 0;
+        
+        if (sessionMax > record) {
+          count++;
+          records.set(ex.name, sessionMax);
+        }
+      });
+    });
+    return count;
+  }, [completedSessions]);
+
+  const markPRAsSeen = async (name: string) => {
+    // Find absolute max weight for this exercise to set the seen baseline
+    let currentMax = 0;
+    completedSessions.forEach(s => {
+      s.exercises.forEach(ex => {
+        if (ex.name === name) {
+          const cSets = ex.sets.filter(st => st.completed);
+          if (cSets.length > 0) {
+            const m = Math.max(...cSets.map(st => parseFloat(st.weight) || 0));
+            if (m > currentMax) currentMax = m;
+          }
+        }
+      });
+    });
+
+    const newSeenPRs = {
+      ...seenPRs,
+      [name]: currentMax
+    };
+    
+    setSeenPRs(newSeenPRs);
+    
+    // Persist to AsyncStorage if user is logged in
+    if (user?.id) {
+      try {
+        const key = `@seen_prs_${user.id}`;
+        await AsyncStorage.setItem(key, JSON.stringify(newSeenPRs));
+      } catch (e) {
+        console.error('Failed to save seen PRs:', e);
+      }
+    }
+  };
+
   return (
     <WorkoutContext.Provider value={{
       workouts,
       isLoading,
       completedSessions,
+      exercisesWithRecentPRs,
+      totalPRsCount,
+      markPRAsSeen,
       addWorkout,
       deleteWorkout,
+      clearAllWorkouts,
       addExercise,
       deleteExercise,
       updateExercise,
