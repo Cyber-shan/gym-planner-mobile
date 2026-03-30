@@ -1,6 +1,8 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown, FadeInUp, FadeInLeft } from 'react-native-reanimated';
+import { useIsFocused } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useWorkouts } from '../../contexts/WorkoutContext';
@@ -20,6 +22,7 @@ const formatLong = (d: Date) => {
 // ─────────────────────────────────────────────────────────────
 
 export default function ProgressPage() {
+  const isFocused = useIsFocused();
   const { completedSessions, isLoading, exercisesWithRecentPRs, markPRAsSeen } = useWorkouts();
   const { weightUnit, convertToDisplay } = useSettings();
   const { user } = useAuth();
@@ -139,14 +142,18 @@ export default function ProgressPage() {
   }, [completedSessions, selectedExercise, weightUnit, convertToDisplay]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
+    <ScrollView 
+      key={isFocused ? 'focused' : 'not-focused'} 
+      style={styles.container} 
+      contentContainerStyle={styles.content}
+    >
+      <Animated.View entering={FadeInDown.delay(0).duration(500).springify()} style={styles.header}>
         <Text style={styles.headerTitle}>Progress Tracker</Text>
-      </View>
+      </Animated.View>
 
       <View style={styles.contentWrap}>
         {/* Search and Exercise Selector */}
-        <View style={styles.selectorWrapper}>
+        <Animated.View entering={FadeInUp.delay(100).duration(500).springify()} style={styles.selectorWrapper}>
           <View style={styles.searchContainer}>
             <Feather name="search" size={16} color="#9ca3af" style={styles.searchIcon} />
             <TextInput
@@ -206,10 +213,10 @@ export default function ProgressPage() {
               <Text style={styles.emptyTitleInline}>No data yet. Start a workout to track progress.</Text>
             </View>
           )}
-        </View>
+        </Animated.View>
 
         {/* PR Bar (Hidden if no PR, but structure is there) */}
-        <View style={styles.prHeader}>
+        <Animated.View entering={FadeInLeft.delay(200).duration(500).springify()} style={styles.prHeader}>
           {isPR && (
             <View style={styles.prBadge}>
               <FontAwesome5 name="trophy" size={10} color="#ffffff" style={{ marginRight: 6 }} />
@@ -221,10 +228,10 @@ export default function ProgressPage() {
               Personal best: <Text style={styles.bestValue}>{prValue} {weightUnit}</Text>
             </Text>
           )}
-        </View>
+        </Animated.View>
 
         {/* Enhanced Flexbox Bar Chart Card (Always Persistent) */}
-        <View style={styles.chartCard}>
+        <Animated.View entering={FadeInUp.delay(300).duration(600).springify()} style={styles.chartCard}>
           <View style={styles.chartHeaderRow}>
             <Text style={styles.chartTitle}>Max weight per session ({weightUnit})</Text>
             {activeBar && (
@@ -308,11 +315,11 @@ export default function ProgressPage() {
               <Text style={styles.legendText}>Session Max</Text>
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Session History */}
         {sessionHistory.length > 0 && (
-          <View style={styles.historyCard}>
+          <Animated.View entering={FadeInUp.delay(500).duration(600).springify()} style={styles.historyCard}>
             <View style={styles.historyHeader}>
               <Feather name="calendar" size={16} color="#0a0a0a" style={{ marginRight: 8 }} />
               <Text style={styles.historyHeaderTitle}>Session History</Text>
@@ -346,7 +353,7 @@ export default function ProgressPage() {
                 </View>
               ))}
             </View>
-          </View>
+          </Animated.View>
         )}
       </View>
     </ScrollView>

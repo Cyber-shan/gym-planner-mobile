@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
-import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight } from 'react-native-reanimated';
+import { useIsFocused } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
 
 import { useSettings } from '../../contexts/SettingsContext';
 import { useWorkouts } from '../../contexts/WorkoutContext';
 
 export default function ProfilePage() {
+  const isFocused = useIsFocused();
   const { user, logout } = useAuth();
   const { workouts, completedSessions, totalPRsCount, clearAllWorkouts } = useWorkouts();
   const { weightUnit, weekStartsOn, updateWeightUnit, updateWeekStartsOn } = useSettings();
@@ -29,13 +32,13 @@ export default function ProfilePage() {
       "This will permanently delete all your workouts. Are you sure?",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
-          style: "destructive", 
+        {
+          text: "Delete",
+          style: "destructive",
           onPress: () => {
             clearAllWorkouts();
             Alert.alert("Cleared", "All workouts cleared.");
-          } 
+          }
         }
       ]
     );
@@ -48,10 +51,14 @@ export default function ProfilePage() {
     : (user?.email?.[0] || "U").toUpperCase();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      
+    <ScrollView 
+      key={isFocused ? 'focused' : 'not-focused'} 
+      style={styles.container} 
+      contentContainerStyle={styles.content}
+    >
+
       {/* ── Profile Hero ── */}
-      <View style={styles.heroSection}>
+      <Animated.View entering={FadeInDown.delay(0).duration(500).springify()} style={styles.heroSection}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initials}</Text>
         </View>
@@ -60,10 +67,10 @@ export default function ProfilePage() {
         <View style={styles.badge}>
           <Text style={styles.badgeText}>Free Plan</Text>
         </View>
-      </View>
+      </Animated.View>
 
       {/* ── Quick Stats ── */}
-      <View style={styles.statsGrid}>
+      <Animated.View entering={FadeInUp.delay(100).duration(500).springify()} style={styles.statsGrid}>
         <View style={styles.statCard}>
           <View style={[styles.statIconBadge, { backgroundColor: '#eff6ff' }]}>
             <FontAwesome5 name="dumbbell" size={14} color="#2563eb" />
@@ -85,10 +92,10 @@ export default function ProfilePage() {
           <Text style={styles.statValue}>{totalPRsCount}</Text>
           <Text style={styles.statLabel}>PRs Set</Text>
         </View>
-      </View>
+      </Animated.View>
 
       {/* ── Account ── */}
-      <View style={styles.section}>
+      <Animated.View entering={FadeInLeft.delay(200).duration(500).springify()} style={styles.section}>
         <View style={styles.sectionHeader}>
           <Feather name="user" size={16} color="#717182" />
           <Text style={styles.sectionTitle}>Account</Text>
@@ -116,10 +123,10 @@ export default function ProfilePage() {
             <Text style={styles.helperText}>Email cannot be changed</Text>
           </View>
         </View>
-      </View>
+      </Animated.View>
 
       {/* ── Workout Preferences ── */}
-      <View style={styles.section}>
+      <Animated.View entering={FadeInRight.delay(300).duration(500).springify()} style={styles.section}>
         <View style={styles.sectionHeader}>
           <FontAwesome5 name="dumbbell" size={14} color="#717182" />
           <Text style={styles.sectionTitle}>Workout Preferences</Text>
@@ -130,31 +137,31 @@ export default function ProfilePage() {
             <View>
               <Text style={styles.rowTitle}>Week Starts On</Text>
             </View>
-             <TouchableOpacity 
-               style={styles.pickerStub} 
-               onPress={() => updateWeekStartsOn(weekStartsOn === 'monday' ? 'sunday' : 'monday')}
-             >
-               <Text style={styles.pickerStubText}>{weekStartsOn}</Text>
-               <Feather name="chevron-down" size={14} color="#717182" />
-             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.pickerStub}
+              onPress={() => updateWeekStartsOn(weekStartsOn === 'monday' ? 'sunday' : 'monday')}
+            >
+              <Text style={styles.pickerStubText}>{weekStartsOn}</Text>
+              <Feather name="chevron-down" size={14} color="#717182" />
+            </TouchableOpacity>
           </View>
           <View style={[styles.row, { borderTopWidth: 1, borderTopColor: '#f3f4f6' }]}>
             <View>
               <Text style={styles.rowTitle}>Weight Units</Text>
             </View>
-             <TouchableOpacity 
-               style={styles.pickerStub} 
-               onPress={() => updateWeightUnit(weightUnit === 'kg' ? 'lb' : 'kg')}
-             >
-               <Text style={styles.pickerStubText}>{weightUnit}</Text>
-               <Feather name="chevron-down" size={14} color="#717182" />
-             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.pickerStub}
+              onPress={() => updateWeightUnit(weightUnit === 'kg' ? 'lb' : 'kg')}
+            >
+              <Text style={styles.pickerStubText}>{weightUnit}</Text>
+              <Feather name="chevron-down" size={14} color="#717182" />
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </Animated.View>
 
       {/* ── Notifications ── */}
-      <View style={styles.section}>
+      <Animated.View entering={FadeInLeft.delay(400).duration(500).springify()} style={styles.section}>
         <View style={styles.sectionHeader}>
           <Feather name="bell" size={16} color="#717182" />
           <Text style={styles.sectionTitle}>Notifications</Text>
@@ -175,15 +182,17 @@ export default function ProfilePage() {
             <Switch value={restReminders} onValueChange={setRestReminders} />
           </View>
         </View>
-      </View>
+      </Animated.View>
 
       {/* ── Save Settings ── */}
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Save Changes</Text>
-      </TouchableOpacity>
+      <Animated.View entering={FadeInUp.delay(500).duration(500).springify()}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>Save Changes</Text>
+        </TouchableOpacity>
+      </Animated.View>
 
       {/* ── Danger Zone ── */}
-      <View style={[styles.section, { borderColor: 'rgba(239, 68, 68, 0.2)' }]}>
+      <Animated.View entering={FadeInUp.delay(600).duration(500).springify()} style={[styles.section, { borderColor: 'rgba(239, 68, 68, 0.2)' }]}>
         <View style={[styles.sectionHeader, { backgroundColor: 'rgba(239, 68, 68, 0.05)', borderBottomColor: 'rgba(239, 68, 68, 0.2)' }]}>
           <Feather name="shield" size={16} color="#ef4444" />
           <Text style={[styles.sectionTitle, { color: '#ef4444' }]}>Danger Zone</Text>
@@ -201,7 +210,7 @@ export default function ProfilePage() {
             <Text style={styles.dangerButtonSolidText}>Log Out</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
 
     </ScrollView>
   );

@@ -1,47 +1,54 @@
 import { useState } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  KeyboardAvoidingView, 
-  Platform, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
-  Alert
+  Alert,
 } from "react-native";
-import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginScreen() {
-  const [isSignUp, setIsSignUp]   = useState(false);
-  const [name, setName]           = useState("");
-  const [email, setEmail]         = useState("");
-  const [password, setPassword]              = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPwd, setShowPwd]                 = useState(false);
-  const [showConfirmPwd, setShowConfirmPwd]   = useState(false);
-  const [error, setError]                     = useState("");
-  
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [error, setError] = useState("");
+
   const router = useRouter();
   const { loginAsDemo } = useAuth();
 
-  const handleLogin = async (emailStr: string, passwordStr: string, nameStr?: string) => {
+  const handleLogin = async (
+    emailStr: string,
+    passwordStr: string,
+    nameStr?: string,
+  ) => {
     try {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email: emailStr,
           password: passwordStr,
-          options: { data: { name: nameStr || emailStr.split('@')[0] } }
+          options: { data: { name: nameStr || emailStr.split("@")[0] } },
         });
         if (error) throw error;
-        
+
         // Prevent auto-login by immediately destroying the session
         await supabase.auth.signOut();
-        
-        Alert.alert("Success", "Account created successfully! Please sign in to continue.");
+
+        Alert.alert(
+          "Success",
+          "Account created successfully! Please sign in to continue.",
+        );
         setIsSignUp(false);
         setPassword("");
         setConfirmPassword("");
@@ -51,7 +58,7 @@ export default function LoginScreen() {
           password: passwordStr,
         });
         if (error) throw error;
-        router.replace('/(app)' as any);
+        router.replace("/(app)" as any);
       }
     } catch (e: any) {
       setError(e.message);
@@ -76,7 +83,7 @@ export default function LoginScreen() {
   };
 
   const switchMode = () => {
-    setIsSignUp(v => !v);
+    setIsSignUp((v) => !v);
     setError("");
     setName("");
     setEmail("");
@@ -87,13 +94,12 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.contentWrap}>
-          
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
@@ -106,9 +112,13 @@ export default function LoginScreen() {
           {/* Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{isSignUp ? "Create Account" : "Welcome Back"}</Text>
+              <Text style={styles.cardTitle}>
+                {isSignUp ? "Create Account" : "Welcome Back"}
+              </Text>
               <Text style={styles.cardSubtitle}>
-                {isSignUp ? "Sign up to start tracking your workouts" : "Sign in to access your workouts"}
+                {isSignUp
+                  ? "Sign up to start tracking your workouts"
+                  : "Sign in to access your workouts"}
               </Text>
             </View>
 
@@ -150,8 +160,15 @@ export default function LoginScreen() {
                     onChangeText={setPassword}
                     secureTextEntry={!showPwd}
                   />
-                  <TouchableOpacity style={styles.eyeButton} onPress={() => setShowPwd(!showPwd)}>
-                    <Feather name={showPwd ? "eye-off" : "eye"} size={16} color="#717182" />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPwd(!showPwd)}
+                  >
+                    <Feather
+                      name={showPwd ? "eye-off" : "eye"}
+                      size={16}
+                      color="#717182"
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -168,8 +185,15 @@ export default function LoginScreen() {
                       onChangeText={setConfirmPassword}
                       secureTextEntry={!showConfirmPwd}
                     />
-                    <TouchableOpacity style={styles.eyeButton} onPress={() => setShowConfirmPwd(!showConfirmPwd)}>
-                      <Feather name={showConfirmPwd ? "eye-off" : "eye"} size={16} color="#717182" />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowConfirmPwd(!showConfirmPwd)}
+                    >
+                      <Feather
+                        name={showConfirmPwd ? "eye-off" : "eye"}
+                        size={16}
+                        color="#717182"
+                      />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -178,15 +202,22 @@ export default function LoginScreen() {
               {!isSignUp && (
                 <View style={styles.forgotPasswordContainer}>
                   <TouchableOpacity>
-                    <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                    <Text style={styles.forgotPasswordText}>
+                      Forgot password?
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
 
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-              <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                <Text style={styles.submitButtonText}>{isSignUp ? "Sign Up" : "Sign In"}</Text>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSubmit}
+              >
+                <Text style={styles.submitButtonText}>
+                  {isSignUp ? "Sign Up" : "Sign In"}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -201,19 +232,23 @@ export default function LoginScreen() {
 
               <View style={styles.switchModeContainer}>
                 <Text style={styles.switchModeText}>
-                  {isSignUp ? "Already have an account? " : "Don't have an account? "}
+                  {isSignUp
+                    ? "Already have an account? "
+                    : "Don't have an account? "}
                 </Text>
                 <TouchableOpacity onPress={switchMode}>
-                  <Text style={styles.switchModeActionText}>{isSignUp ? "Sign in" : "Sign up"}</Text>
+                  <Text style={styles.switchModeActionText}>
+                    {isSignUp ? "Sign in" : "Sign up"}
+                  </Text>
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity 
-                style={styles.demoButton} 
+              <TouchableOpacity
+                style={styles.demoButton}
                 onPress={async () => {
                   try {
                     await loginAsDemo();
-                    router.replace('/(app)' as any);
+                    router.replace("/(app)" as any);
                   } catch (e: any) {
                     setError("Demo login failed");
                   }
@@ -236,51 +271,51 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 16,
     paddingVertical: 32,
   },
   contentWrap: {
-    width: '100%',
+    width: "100%",
     maxWidth: 408,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   iconContainer: {
     width: 64,
     height: 64,
     borderRadius: 16,
-    backgroundColor: '#030213',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#030213",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
   },
   title: {
     fontSize: 30,
-    color: '#0a0a0a',
-    fontWeight: '700',
+    color: "#0a0a0a",
+    fontWeight: "700",
     lineHeight: 36,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#717182',
-    fontWeight: '400',
+    color: "#717182",
+    fontWeight: "400",
     lineHeight: 24,
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: "rgba(0, 0, 0, 0.1)",
     borderRadius: 14,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   cardHeader: {
     paddingHorizontal: 24,
@@ -288,14 +323,14 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    color: '#0a0a0a',
-    fontWeight: '500',
+    color: "#0a0a0a",
+    fontWeight: "500",
     marginBottom: 4,
   },
   cardSubtitle: {
     fontSize: 14,
-    color: '#717182',
-    fontWeight: '400',
+    color: "#717182",
+    fontWeight: "400",
     lineHeight: 20,
   },
   cardBody: {
@@ -309,65 +344,65 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#0a0a0a',
-    fontWeight: '500',
+    color: "#0a0a0a",
+    fontWeight: "500",
   },
   input: {
     height: 48,
-    backgroundColor: '#f3f3f5',
+    backgroundColor: "#f3f3f5",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 0,
     fontSize: 16,
-    color: '#0a0a0a',
+    color: "#0a0a0a",
   },
   passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f3f3f5',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f3f3f5",
     borderRadius: 8,
     height: 48,
   },
   passwordInput: {
     flex: 1,
-    height: '100%',
+    height: "100%",
     paddingHorizontal: 12,
     paddingVertical: 0,
     fontSize: 16,
-    color: '#0a0a0a',
+    color: "#0a0a0a",
   },
   eyeButton: {
     paddingHorizontal: 12,
-    height: '100%',
-    justifyContent: 'center',
+    height: "100%",
+    justifyContent: "center",
   },
   forgotPasswordContainer: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
     marginTop: -8,
     marginBottom: 8,
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#030213',
-    fontWeight: '500',
+    color: "#030213",
+    fontWeight: "500",
   },
   errorText: {
-    color: '#ef4444',
+    color: "#ef4444",
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
   submitButton: {
     height: 48,
-    backgroundColor: '#030213',
+    backgroundColor: "#030213",
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 4,
   },
   submitButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   cardFooter: {
     paddingHorizontal: 24,
@@ -376,59 +411,59 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   dividerContainer: {
-    position: 'relative',
-    justifyContent: 'center',
+    position: "relative",
+    justifyContent: "center",
     height: 16,
     marginBottom: 8,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
   },
   orContainer: {
-    position: 'absolute',
-    alignSelf: 'center',
-    backgroundColor: 'white',
+    position: "absolute",
+    alignSelf: "center",
+    backgroundColor: "white",
     paddingHorizontal: 8,
   },
   orText: {
     fontSize: 12,
-    color: '#717182',
+    color: "#717182",
   },
   switchModeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
   },
   switchModeText: {
     fontSize: 14,
-    color: '#717182',
-    fontWeight: '500',
+    color: "#717182",
+    fontWeight: "500",
   },
   switchModeActionText: {
     fontSize: 14,
-    color: '#030213',
-    fontWeight: '600',
+    color: "#030213",
+    fontWeight: "600",
   },
   demoButton: {
     height: 36,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: "rgba(0, 0, 0, 0.1)",
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   demoButtonText: {
     fontSize: 14,
-    color: '#0a0a0a',
-    fontWeight: '500',
+    color: "#0a0a0a",
+    fontWeight: "500",
   },
   footerNote: {
     fontSize: 12,
-    color: '#717182',
-    textAlign: 'center',
+    color: "#717182",
+    textAlign: "center",
     marginTop: 16,
-  }
+  },
 });
