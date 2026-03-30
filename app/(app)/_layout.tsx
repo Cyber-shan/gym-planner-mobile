@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWorkouts } from '../../contexts/WorkoutContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Custom Header Component based on your design
@@ -40,6 +41,7 @@ function AppHeader() {
 }
 
 export default function AppLayout() {
+  const { exercisesWithRecentPRs } = useWorkouts();
   const insets = useSafeAreaInsets();
   const androidExtra = Platform.OS === 'android' ? 15 : 0;
   const bottomPadding = (insets.bottom > 0 ? insets.bottom : (Platform.OS === 'ios' ? 28 : 16)) + androidExtra;
@@ -85,6 +87,14 @@ export default function AppLayout() {
         options={{
           title: 'Progress',
           tabBarIcon: ({ color, size }) => <Feather name="trending-up" size={20} color={color} />,
+          tabBarBadge: exercisesWithRecentPRs.length > 0 ? "" : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: '#ef4444',
+            minWidth: 8,
+            height: 8,
+            borderRadius: 4,
+            marginTop: 4,
+          }
         }}
       />
       <Tabs.Screen

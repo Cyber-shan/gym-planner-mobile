@@ -1,5 +1,5 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -13,6 +13,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActiveExercise, CompletedSession, useWorkouts } from '../../../contexts/WorkoutContext';
+import { useSettings } from '../../../contexts/SettingsContext';
+import { getCategoryColor } from '../../../lib/colors';
+import { stripUnit } from '../../../lib/utils';
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -27,6 +30,7 @@ const DEFAULT_REST = 60;
 export default function ActiveWorkoutPage() {
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
   const { workouts, addCompletedSession } = useWorkouts();
+  const { weightUnit, convertToDisplay, convertToStorage } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -38,6 +42,7 @@ export default function ActiveWorkoutPage() {
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST);
   const [restActive, setRestActive] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const completedSetsCount = activeExercises.reduce(
     (acc, ex) => acc + ex.sets.filter(s => s.completed).length, 0
@@ -48,54 +53,55 @@ export default function ActiveWorkoutPage() {
   useFocusEffect(
     useCallback(() => {
       if (!workout) return;
+      setIsFocused(true);
 
-      // START/RESET logic
-      // If no progress made, re-sync with latest plan (handles "edit before start")
-      if (completedSetsCount === 0) {
-        startTimeRef.current = new Date();
-        setElapsedTime(0);
+      // Always reset for a fresh session on entry
+      startTimeRef.current = new Date();
+      setElapsedTime(0);
+      setRestActive(false);
+      setRestSeconds(DEFAULT_REST);
+      setActiveExercises(workout.exercises.map(e => ({
+        id: e.id,
+        name: e.name,
+        category: e.category,
+        sets: Array.from({ length: e.sets }, (_, i) => ({
+          setNumber: i + 1,
+          plannedReps: e.reps,
+          actualReps: e.reps,
+          weight: e.weight ? String(convertToDisplay(e.weight)) : "",
+          completed: false,
+        })),
+      })));
+
+      const interval = setInterval(() => {
+        setElapsedTime(Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000));
+      }, 1000);
+
+      return () => {
+        setIsFocused(false);
+        clearInterval(interval);
         setRestActive(false);
         setRestSeconds(DEFAULT_REST);
-        setActiveExercises(workout.exercises.map(e => ({
-          id: e.id,
-          name: e.name,
-          category: e.category,
-          sets: Array.from({ length: e.sets }, (_, i) => ({
-            setNumber: i + 1,
-            plannedReps: e.reps,
-            actualReps: e.reps,
-            weight: e.weight || "",
-            completed: false,
-          })),
-        })));
-      }
-
-      // START timer (only if not already finished)
-      if (completedSetsCount < totalSetsCount || totalSetsCount === 0) {
-        const interval = setInterval(() => {
-          setElapsedTime(Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000));
-        }, 1000);
-
-        return () => {
-          // STOP timer when navigating away
-          clearInterval(interval);
-        };
-      }
-    }, [workoutId, workout, completedSetsCount === 0])
+      };
+    }, [workoutId, workout])
   );
 
   // Rest timer logic
   useEffect(() => {
-    if (!restActive) return;
+    if (!restActive || !isFocused) return;
     if (restSeconds <= 0) {
-      setRestActive(false);
-      setRestSeconds(DEFAULT_REST);
-      Alert.alert("Rest Complete", "Time to go! 💪");
+      if (isFocused) {
+        setRestActive(false);
+        setRestSeconds(DEFAULT_REST);
+        Alert.alert("Rest Complete", "Time to go! 💪");
+      }
       return;
     }
-    const t = setTimeout(() => setRestSeconds(s => s - 1), 1000);
+    const t = setTimeout(() => {
+      if (isFocused) setRestSeconds(s => s - 1);
+    }, 1000);
     return () => clearTimeout(t);
-  }, [restActive, restSeconds]);
+  }, [restActive, restSeconds, isFocused]);
 
   const handleToggleSet = useCallback((exIdx: number, setIdx: number) => {
     let wasCompleted = false;
@@ -119,6 +125,30 @@ export default function ActiveWorkoutPage() {
     }
   }, []);
 
+  // Live sync with plan: if exercises are added/deleted before we start, update immediately
+  useEffect(() => {
+    if (!workout || completedSetsCount > 0) return;
+
+    // Check if lengths differ or IDs differ to avoid infinite loops if objects are recreated
+    const planIds = workout.exercises.map(e => e.id).join(',');
+    const currentIds = activeExercises.map(e => e.id).join(',');
+
+    if (planIds !== currentIds) {
+      setActiveExercises(workout.exercises.map(e => ({
+        id: e.id,
+        name: e.name,
+        category: e.category,
+        sets: Array.from({ length: e.sets }, (_, i) => ({
+          setNumber: i + 1,
+          plannedReps: e.reps,
+          actualReps: e.reps,
+          weight: e.weight ? String(convertToDisplay(e.weight)) : "",
+          completed: false,
+        })),
+      })));
+    }
+  }, [workout?.exercises, completedSetsCount === 0]);
+
   const handleEndWorkout = () => {
     setRestActive(false);
     setShowSummary(true);
@@ -136,7 +166,10 @@ export default function ActiveWorkoutPage() {
         id: ae.id,
         name: ae.name,
         category: ae.category,
-        sets: ae.sets,
+        sets: ae.sets.map(s => ({
+          ...s,
+          weight: s.weight.toLowerCase() === 'bodyweight' ? 'Bodyweight' : String(convertToStorage(s.weight))
+        })),
       })),
     };
     await addCompletedSession(session);
@@ -221,8 +254,8 @@ export default function ActiveWorkoutPage() {
                 <View style={styles.exerciseTitleContainer}>
                   <Text style={styles.exerciseName}>{exercise.name}</Text>
                   {exercise.category && (
-                    <View style={styles.categoryBadge}>
-                      <Text style={styles.categoryBadgeText}>{exercise.category}</Text>
+                    <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(exercise.category).bg }]}>
+                      <Text style={[styles.categoryBadgeText, { color: getCategoryColor(exercise.category).text }]}>{exercise.category}</Text>
                     </View>
                   )}
                 </View>
@@ -237,7 +270,7 @@ export default function ActiveWorkoutPage() {
               <View style={styles.tableHeader}>
                 <Text style={[styles.tableLabel, { width: 30 }]}>Set</Text>
                 <Text style={[styles.tableLabel, { flex: 1, textAlign: 'center' }]}>Reps</Text>
-                <Text style={[styles.tableLabel, { flex: 1.5, textAlign: 'center' }]}>Weight</Text>
+                <Text style={[styles.tableLabel, { flex: 1.5, textAlign: 'center' }]}>{weightUnit}</Text>
                 <Text style={[styles.tableLabel, { width: 40, textAlign: 'right' }]}>Done</Text>
               </View>
 
@@ -255,9 +288,13 @@ export default function ActiveWorkoutPage() {
                   </View>
 
                   <View style={styles.valueWrapper}>
-                    <Text style={styles.valueText}>{set.weight || '0'} <Text style={styles.unitText}>kg</Text></Text>
+                    <Text style={styles.valueText}>
+                      {stripUnit(set.weight) || '0'} 
+                      {set.weight?.toLowerCase() !== 'bodyweight' && <Text style={styles.unitText}> {weightUnit}</Text>}
+                    </Text>
                     <Feather name="lock" size={8} color="#9ca3af" style={styles.lockIcon} />
                   </View>
+ village
 
                   <TouchableOpacity
                     style={[styles.checkButton, set.completed && styles.checkButtonDone]}
@@ -399,8 +436,8 @@ const styles = StyleSheet.create({
   exerciseHeader: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', backgroundColor: '#f9fafb' },
   exerciseTitleContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   exerciseName: { fontSize: 15, fontWeight: '600', color: '#0a0a0a', marginRight: 8 },
-  categoryBadge: { backgroundColor: '#e5e7eb', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  categoryBadgeText: { fontSize: 10, color: '#4b5563', fontWeight: '500' },
+  categoryBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
+  categoryBadgeText: { fontSize: 10, fontWeight: '600' },
   doneCircle: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center' },
 
   tableHeader: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },

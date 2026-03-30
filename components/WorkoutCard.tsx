@@ -1,7 +1,10 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { getCategoryColor } from '../lib/colors';
+import { stripUnit } from '../lib/utils';
 import { AddExerciseDialog } from './AddExerciseDialog';
+import { useSettings } from '../contexts/SettingsContext';
 
 export interface Exercise {
   id: string;
@@ -40,6 +43,7 @@ export function WorkoutCard({
   onStartWorkout,
   onSaveAsTemplate,
 }: WorkoutCardProps) {
+  const { weightUnit, convertToDisplay, convertToStorage } = useSettings();
   const [isExpanded, setIsExpanded] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ sets: 0, reps: 0, weight: "", notes: "" });
@@ -52,13 +56,20 @@ export function WorkoutCard({
     setEditForm({
       sets: exercise.sets,
       reps: exercise.reps,
-      weight: exercise.weight || "",
+      weight: exercise.weight ? String(convertToDisplay(exercise.weight)) : "",
       notes: exercise.notes || "",
     });
   };
 
   const saveEdit = (exerciseId: string) => {
-    onEditExercise(workout.id, exerciseId, editForm);
+    const finalWeight = editForm.weight.toLowerCase() === 'bodyweight'
+      ? 'Bodyweight'
+      : (editForm.weight ? String(convertToStorage(editForm.weight)) : "");
+
+    onEditExercise(workout.id, exerciseId, {
+      ...editForm,
+      weight: finalWeight
+    });
     setEditingId(null);
   };
 
@@ -125,28 +136,43 @@ export function WorkoutCard({
                         <View style={styles.editCol}>
                           <Text style={styles.editLabel}>Sets</Text>
                           <TextInput
-                            style={styles.editInput}
+                            style={[styles.editInput, { textAlign: 'center', paddingTop: 0, paddingBottom: 0 }]}
                             value={String(editForm.sets)}
                             keyboardType="numeric"
                             onChangeText={t => setEditForm(p => ({ ...p, sets: parseInt(t) || 0 }))}
+                            multiline={false}
+                            numberOfLines={1}
+                            scrollEnabled={false}
+                            selectTextOnFocus={true}
+                            textAlignVertical="center"
                           />
                         </View>
                         <View style={styles.editCol}>
                           <Text style={styles.editLabel}>Reps</Text>
                           <TextInput
-                            style={styles.editInput}
+                            style={[styles.editInput, { textAlign: 'center', paddingTop: 0, paddingBottom: 0 }]}
                             value={String(editForm.reps)}
                             keyboardType="numeric"
                             onChangeText={t => setEditForm(p => ({ ...p, reps: parseInt(t) || 0 }))}
+                            multiline={false}
+                            numberOfLines={1}
+                            scrollEnabled={false}
+                            selectTextOnFocus={true}
+                            textAlignVertical="center"
                           />
                         </View>
                         <View style={styles.editCol}>
                           <Text style={styles.editLabel}>Weight</Text>
                           <TextInput
-                            style={styles.editInput}
+                            style={[styles.editInput, { textAlign: 'center', paddingTop: 0, paddingBottom: 0 }]}
                             value={editForm.weight}
-                            placeholder="50kg"
+                            placeholder={`e.g., 60${weightUnit}`}
                             onChangeText={t => setEditForm(p => ({ ...p, weight: t }))}
+                            multiline={false}
+                            numberOfLines={1}
+                            scrollEnabled={false}
+                            selectTextOnFocus={true}
+                            textAlignVertical="center"
                           />
                         </View>
                       </View>
@@ -161,32 +187,33 @@ export function WorkoutCard({
                         />
                       </View>
                       <View style={styles.editActions}>
-                        <TouchableOpacity style={[styles.editIconButton, { backgroundColor: '#f0fdf4' }]} onPress={() => saveEdit(exercise.id)}>
-                          <Feather name="check" size={16} color="#16a34a" />
+                        <TouchableOpacity style={[styles.editIconButton, { backgroundColor: '#16a34a' }]} onPress={() => saveEdit(exercise.id)}>
+                          <Feather name="check" size={18} color="#ffffff" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.editIconButton, { backgroundColor: '#fef2f2' }]} onPress={() => setEditingId(null)}>
-                          <Feather name="x" size={16} color="#ef4444" />
+                        <TouchableOpacity style={[styles.editIconButton, { backgroundColor: '#ef4444' }]} onPress={() => setEditingId(null)}>
+                          <Feather name="x" size={18} color="#ffffff" />
                         </TouchableOpacity>
                       </View>
                     </View>
                   ) : (
                     // Read-only View
                     <View style={styles.exerciseRow}>
-                      {exercise.imageUrl && (
-                        <Image source={{ uri: exercise.imageUrl }} style={styles.exerciseImage} />
-                      )}
                       <View style={styles.exerciseContent}>
                         <View style={styles.exerciseTitleRow}>
                           <Text style={styles.exerciseName}>{exercise.name}</Text>
                           {exercise.category && (
-                            <View style={styles.exerciseBadge}>
-                              <Text style={styles.exerciseBadgeText}>{exercise.category}</Text>
+                            <View style={[styles.exerciseBadge, { backgroundColor: getCategoryColor(exercise.category).bg }]}>
+                              <Text style={[styles.exerciseBadgeText, { color: getCategoryColor(exercise.category).text }]}>{exercise.category}</Text>
                             </View>
                           )}
                         </View>
                         <View style={styles.exerciseDetailsRow}>
                           <Text style={styles.exerciseDetailsText}>{exercise.sets} sets × {exercise.reps} reps</Text>
-                          {!!exercise.weight && <Text style={styles.exerciseDetailsText}>  •  {exercise.weight}</Text>}
+                          {!!exercise.weight && (
+                            <Text style={styles.exerciseDetailsText}>
+                              {"  •  "}{convertToDisplay(exercise.weight)}{exercise.weight.toLowerCase() !== 'bodyweight' ? ` ${weightUnit}` : ''}
+                            </Text>
+                          )}
                         </View>
                         {!!exercise.notes && (
                           <Text style={styles.exerciseNotesText}>{exercise.notes}</Text>
@@ -299,12 +326,11 @@ const styles = StyleSheet.create({
   exerciseList: { gap: 12 },
   exerciseItem: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, backgroundColor: '#f9fafb', padding: 12 },
   exerciseRow: { flexDirection: 'row' },
-  exerciseImage: { width: 64, height: 64, borderRadius: 6, backgroundColor: '#e5e7eb', marginRight: 12 },
   exerciseContent: { flex: 1 },
   exerciseTitleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
   exerciseName: { fontSize: 14, fontWeight: '600', color: '#0a0a0a' },
-  exerciseBadge: { backgroundColor: '#e5e7eb', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
-  exerciseBadgeText: { fontSize: 10, color: '#374151', fontWeight: '500' },
+  exerciseBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
+  exerciseBadgeText: { fontSize: 10, fontWeight: '600' },
   exerciseDetailsRow: { flexDirection: 'row', alignItems: 'center' },
   exerciseDetailsText: { fontSize: 12, color: '#717182' },
   exerciseNotesText: { fontSize: 13, color: '#4b5563', marginTop: 6, fontStyle: 'italic' },
@@ -317,8 +343,19 @@ const styles = StyleSheet.create({
   editInput: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 6, height: 36, paddingHorizontal: 8, fontSize: 14, color: '#0a0a0a' },
   editNotesRow: { marginBottom: 16 },
   editTextarea: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 6, minHeight: 60, paddingHorizontal: 8, paddingTop: 8, paddingBottom: 8, fontSize: 14, color: '#0a0a0a', textAlignVertical: 'top' },
-  editActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
-  editIconButton: { padding: 8, borderRadius: 6 },
+  editActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 4 },
+  editIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3
+  },
   addExerciseButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e5e7eb', paddingVertical: 10, borderRadius: 8, marginTop: 4 },
   addExerciseButtonText: { color: '#0a0a0a', fontSize: 13, fontWeight: '500' },
   cardFooterActions: { flexDirection: 'row', gap: 8, marginTop: 12 },

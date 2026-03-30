@@ -19,9 +19,11 @@ export default function LoginScreen() {
   const [isSignUp, setIsSignUp]   = useState(false);
   const [name, setName]           = useState("");
   const [email, setEmail]         = useState("");
-  const [password, setPassword]   = useState("");
-  const [showPwd, setShowPwd]     = useState(false);
-  const [error, setError]         = useState("");
+  const [password, setPassword]              = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPwd, setShowPwd]                 = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd]   = useState(false);
+  const [error, setError]                     = useState("");
   
   const router = useRouter();
   const { loginAsDemo } = useAuth();
@@ -42,6 +44,7 @@ export default function LoginScreen() {
         Alert.alert("Success", "Account created successfully! Please sign in to continue.");
         setIsSignUp(false);
         setPassword("");
+        setConfirmPassword("");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: emailStr,
@@ -65,6 +68,10 @@ export default function LoginScreen() {
       setError("Please fill in all fields.");
       return;
     }
+    if (isSignUp && password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
     handleLogin(email.trim(), password, isSignUp ? name.trim() : undefined);
   };
 
@@ -74,6 +81,9 @@ export default function LoginScreen() {
     setName("");
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
+    setShowPwd(false);
+    setShowConfirmPwd(false);
   };
 
   return (
@@ -145,6 +155,25 @@ export default function LoginScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+
+              {isSignUp && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      placeholder="••••••••"
+                      placeholderTextColor="#717182"
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry={!showConfirmPwd}
+                    />
+                    <TouchableOpacity style={styles.eyeButton} onPress={() => setShowConfirmPwd(!showConfirmPwd)}>
+                      <Feather name={showConfirmPwd ? "eye-off" : "eye"} size={16} color="#717182" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
 
               {!isSignUp && (
                 <View style={styles.forgotPasswordContainer}>
