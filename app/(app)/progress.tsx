@@ -1,7 +1,7 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, FadeInLeft } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight } from 'react-native-reanimated';
 import { useIsFocused } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -174,34 +174,38 @@ export default function ProgressPage() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsContainer}>
               {filteredExerciseNames.length > 0 ? (
                 filteredExerciseNames.map((name, i) => (
-                  <TouchableOpacity
-                    key={`exercise-${i}-${name}`}
-                    style={[
-                      styles.chip,
-                      selectedExercise === name && styles.chipActive,
-                      exercisesWithRecentPRs.includes(name) && styles.chipPR
-                    ]}
-                    onPress={() => {
-                      setSelectedExercise(name);
-                      markPRAsSeen(name);
-                    }}
+                  <Animated.View 
+                    key={`exercise-${i}-${name}`} 
+                    entering={FadeInRight.delay(i * 30 + 100).duration(400).springify()}
                   >
-                    <View style={styles.chipContent}>
-                      <Text style={[
-                        styles.chipText,
-                        selectedExercise === name && styles.chipTextActive,
-                        exercisesWithRecentPRs.includes(name) && styles.chipTextPR
-                      ]}>{name}</Text>
-                      {exercisesWithRecentPRs.includes(name) && (
-                        <FontAwesome5
-                          name="trophy"
-                          size={10}
-                          color="#854d0e"
-                          style={{ marginLeft: 6 }}
-                        />
-                      )}
-                    </View>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.chip,
+                        selectedExercise === name && styles.chipActive,
+                        exercisesWithRecentPRs.includes(name) && styles.chipPR
+                      ]}
+                      onPress={() => {
+                        setSelectedExercise(name);
+                        markPRAsSeen(name);
+                      }}
+                    >
+                      <View style={styles.chipContent}>
+                        <Text style={[
+                          styles.chipText,
+                          selectedExercise === name && styles.chipTextActive,
+                          exercisesWithRecentPRs.includes(name) && styles.chipTextPR
+                        ]}>{name}</Text>
+                        {exercisesWithRecentPRs.includes(name) && (
+                          <FontAwesome5
+                            name="trophy"
+                            size={10}
+                            color="#854d0e"
+                            style={{ marginLeft: 6 }}
+                          />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  </Animated.View>
                 ))
               ) : (
                 <Text style={styles.noResultsText}>No exercises found</Text>
@@ -265,18 +269,22 @@ export default function ProgressPage() {
                     {/* PB Line */}
                     <View style={[styles.pbIndicatorLine, { bottom: 24 + 156 - 1 }]} />
 
-                    {chartData.map((d) => {
+                    {chartData.map((d, i) => {
                       const heightPercent = allTimePB > 0 ? (d.weight / allTimePB) * 100 : 0;
                       const isPrBar = d.weight === allTimePB;
                       const isActive = activeBar === d.id;
 
                       return (
-                        <Pressable
+                        <Animated.View
                           key={d.id}
+                          entering={FadeInUp.delay(i * 50 + 300).duration(500).springify()}
                           style={styles.barColumn}
-                          onPressIn={() => setActiveBar(d.id)}
-                          onPressOut={() => setActiveBar(null)}
                         >
+                          <Pressable
+                            style={{ flex: 1 }}
+                            onPressIn={() => setActiveBar(d.id)}
+                            onPressOut={() => setActiveBar(null)}
+                          >
                           <View style={styles.barWrapper}>
                             <View style={[
                               styles.bar,
@@ -292,7 +300,8 @@ export default function ProgressPage() {
                           <View style={styles.barLabelContainer}>
                             <Text style={styles.barLabel} numberOfLines={1}>{d.date}</Text>
                           </View>
-                        </Pressable>
+                          </Pressable>
+                        </Animated.View>
                       );
                     })}
                   </>
@@ -326,8 +335,9 @@ export default function ProgressPage() {
             </View>
             <View>
               {sessionHistory.map((s, index) => (
-                <View
+                <Animated.View
                   key={s.id}
+                  entering={FadeInUp.delay(index * 50 + 500).duration(500).springify()}
                   style={[
                     styles.historyRow,
                     index === sessionHistory.length - 1 && { borderBottomWidth: 0 }
@@ -350,7 +360,7 @@ export default function ProgressPage() {
                     )}
                     <Text style={styles.historySetsReps}>{selectedExercise}</Text>
                   </View>
-                </View>
+                </Animated.View>
               ))}
             </View>
           </Animated.View>

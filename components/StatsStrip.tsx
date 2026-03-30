@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight } from 'react-native-reanimated';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { isSameWeek, startOfWeek, subWeeks, parseISO, isSameDay, subDays, startOfDay } from 'date-fns';
 import { useSettings } from '../contexts/SettingsContext';
@@ -174,34 +175,42 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
 
   return (
     <View style={styles.container}>
-      <StatCard
-        icon={<FontAwesome5 name="dumbbell" size={14} color="#2563eb" />}
-        label="This Week"
-        value={`${stats.workoutsThisWeek}`}
-        sub="planned"
-        colorBg="#eff6ff"
-      />
-      <StatCard
-        icon={<Feather name="trending-up" size={14} color="#16a34a" />}
-        label="Weekly Vol."
-        value={stats.volume}
-        sub="lifted"
-        colorBg="#f0fdf4"
-      />
-      <StatCard
-        icon={<FontAwesome5 name="fire" size={14} color="#f97316" />}
-        label="Streak"
-        value={stats.streak}
-        sub="consecutive"
-        colorBg="#fff7ed"
-      />
-      <StatCard
-        icon={<FontAwesome5 name="bullseye" size={14} color="#9333ea" />}
-        label="Top Muscle"
-        value={stats.topMuscle}
-        sub="this week"
-        colorBg="#faf5ff"
-      />
+      <Animated.View entering={FadeInDown.delay(0).duration(500).springify()} style={{ width: cardWidth }}>
+        <StatCard
+          icon={<FontAwesome5 name="dumbbell" size={14} color="#2563eb" />}
+          label="This Week"
+          value={`${stats.workoutsThisWeek}`}
+          sub="planned"
+          colorBg="#eff6ff"
+        />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(100).duration(500).springify()} style={{ width: cardWidth }}>
+        <StatCard
+          icon={<Feather name="trending-up" size={14} color="#16a34a" />}
+          label="Weekly Vol."
+          value={stats.volume}
+          sub="lifted"
+          colorBg="#f0fdf4"
+        />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={{ width: cardWidth }}>
+        <StatCard
+          icon={<FontAwesome5 name="fire" size={14} color="#f97316" />}
+          label="Streak"
+          value={stats.streak}
+          sub="consecutive"
+          colorBg="#fff7ed"
+        />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(300).duration(500).springify()} style={{ width: cardWidth }}>
+        <StatCard
+          icon={<FontAwesome5 name="bullseye" size={14} color="#9333ea" />}
+          label="Top Muscle"
+          value={stats.topMuscle}
+          sub="this week"
+          colorBg="#faf5ff"
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -222,6 +231,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    width: '100%', // StatCard takes full width of Animated.View
   },
   iconContainer: {
     width: 36,

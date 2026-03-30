@@ -54,14 +54,10 @@ export default function DashboardPage() {
     >
 
         {/* Stats Strip */}
-        <Animated.View entering={FadeInDown.delay(0).duration(500).springify()}>
-          <StatsStrip workouts={workouts} sessions={completedSessions} />
-        </Animated.View>
+        <StatsStrip workouts={workouts} sessions={completedSessions} />
 
         {/* Calendar */}
-        <Animated.View entering={FadeInDown.delay(100).duration(500).springify()}>
-          <WeeklyCalendar workouts={workouts} sessions={completedSessions} />
-        </Animated.View>
+        <WeeklyCalendar workouts={workouts} sessions={completedSessions} />
 
         {/* Main Layout Area */}
         <View style={styles.mainArea}>

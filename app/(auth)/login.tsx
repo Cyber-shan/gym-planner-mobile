@@ -10,6 +10,8 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight } from "react-native-reanimated";
+import { useIsFocused } from "@react-navigation/native";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
@@ -24,6 +26,7 @@ export default function LoginScreen() {
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [error, setError] = useState("");
+  const isFocused = useIsFocused();
 
   const router = useRouter();
   const { loginAsDemo } = useAuth();
@@ -98,19 +101,23 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView key={isFocused ? 'focused' : 'not-focused'} contentContainerStyle={styles.scrollContent}>
         <View style={styles.contentWrap}>
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.iconContainer}>
+            <Animated.View entering={FadeInDown.delay(0).duration(600).springify()} style={styles.iconContainer}>
               <FontAwesome5 name="dumbbell" size={24} color="white" />
-            </View>
-            <Text style={styles.title}>Gym Planner</Text>
-            <Text style={styles.subtitle}>Your digital workout notebook</Text>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
+              <Text style={styles.title}>Gym Planner</Text>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(100).duration(600).springify()}>
+              <Text style={styles.subtitle}>Your digital workout notebook</Text>
+            </Animated.View>
           </View>
 
           {/* Card */}
-          <View style={styles.card}>
+          <Animated.View entering={FadeInUp.delay(200).duration(600).springify()} style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>
                 {isSignUp ? "Create Account" : "Welcome Back"}
@@ -124,7 +131,7 @@ export default function LoginScreen() {
 
             <View style={styles.cardBody}>
               {isSignUp && (
-                <View style={styles.inputGroup}>
+                <Animated.View entering={FadeInLeft.delay(300).duration(500).springify()} style={styles.inputGroup}>
                   <Text style={styles.label}>Full Name</Text>
                   <TextInput
                     style={styles.input}
@@ -133,10 +140,10 @@ export default function LoginScreen() {
                     value={name}
                     onChangeText={setName}
                   />
-                </View>
+                </Animated.View>
               )}
 
-              <View style={styles.inputGroup}>
+              <Animated.View entering={FadeInLeft.delay(350).duration(500).springify()} style={styles.inputGroup}>
                 <Text style={styles.label}>Email</Text>
                 <TextInput
                   style={styles.input}
@@ -147,9 +154,9 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
-              </View>
+              </Animated.View>
 
-              <View style={styles.inputGroup}>
+              <Animated.View entering={FadeInRight.delay(400).duration(500).springify()} style={styles.inputGroup}>
                 <Text style={styles.label}>Password</Text>
                 <View style={styles.passwordContainer}>
                   <TextInput
@@ -171,10 +178,10 @@ export default function LoginScreen() {
                     />
                   </TouchableOpacity>
                 </View>
-              </View>
+              </Animated.View>
 
               {isSignUp && (
-                <View style={styles.inputGroup}>
+                <Animated.View entering={FadeInRight.delay(450).duration(500).springify()} style={styles.inputGroup}>
                   <Text style={styles.label}>Confirm Password</Text>
                   <View style={styles.passwordContainer}>
                     <TextInput
@@ -196,41 +203,44 @@ export default function LoginScreen() {
                       />
                     </TouchableOpacity>
                   </View>
-                </View>
+                </Animated.View>
               )}
 
+              {/* Forgot Password Container, Error Text, Submit Button */}
               {!isSignUp && (
-                <View style={styles.forgotPasswordContainer}>
+                <Animated.View entering={FadeInUp.delay(500).duration(500).springify()} style={styles.forgotPasswordContainer}>
                   <TouchableOpacity>
                     <Text style={styles.forgotPasswordText}>
                       Forgot password?
                     </Text>
                   </TouchableOpacity>
-                </View>
+                </Animated.View>
               )}
 
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleSubmit}
-              >
-                <Text style={styles.submitButtonText}>
-                  {isSignUp ? "Sign Up" : "Sign In"}
-                </Text>
-              </TouchableOpacity>
+              <Animated.View entering={FadeInUp.delay(550).duration(600).springify()}>
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={handleSubmit}
+                >
+                  <Text style={styles.submitButtonText}>
+                    {isSignUp ? "Sign Up" : "Sign In"}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
             </View>
 
             {/* Footer */}
             <View style={styles.cardFooter}>
-              <View style={styles.dividerContainer}>
+              <Animated.View entering={FadeInUp.delay(650).duration(600).springify()} style={styles.dividerContainer}>
                 <View style={styles.divider} />
                 <View style={styles.orContainer}>
                   <Text style={styles.orText}>OR</Text>
                 </View>
-              </View>
+              </Animated.View>
 
-              <View style={styles.switchModeContainer}>
+              <Animated.View entering={FadeInUp.delay(700).duration(600).springify()} style={styles.switchModeContainer}>
                 <Text style={styles.switchModeText}>
                   {isSignUp
                     ? "Already have an account? "
@@ -241,27 +251,31 @@ export default function LoginScreen() {
                     {isSignUp ? "Sign in" : "Sign up"}
                   </Text>
                 </TouchableOpacity>
-              </View>
+              </Animated.View>
 
-              <TouchableOpacity
-                style={styles.demoButton}
-                onPress={async () => {
-                  try {
-                    await loginAsDemo();
-                    router.replace("/(app)" as any);
-                  } catch (e: any) {
-                    setError("Demo login failed");
-                  }
-                }}
-              >
-                <Text style={styles.demoButtonText}>Continue as Demo User</Text>
-              </TouchableOpacity>
+              <Animated.View entering={FadeInUp.delay(750).duration(600).springify()}>
+                <TouchableOpacity
+                  style={styles.demoButton}
+                  onPress={async () => {
+                    try {
+                      await loginAsDemo();
+                      router.replace("/(app)" as any);
+                    } catch (e: any) {
+                      setError("Demo login failed");
+                    }
+                  }}
+                >
+                  <Text style={styles.demoButtonText}>Continue as Demo User</Text>
+                </TouchableOpacity>
+              </Animated.View>
             </View>
-          </View>
+          </Animated.View>
 
-          <Text style={styles.footerNote}>
-            By continuing, you agree to our Terms of Service and Privacy Policy
-          </Text>
+          <Animated.View entering={FadeInUp.delay(850).duration(600).springify()}>
+            <Text style={styles.footerNote}>
+              By continuing, you agree to our Terms of Service and Privacy Policy
+            </Text>
+          </Animated.View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { useSettings } from '../contexts/SettingsContext';
 
 export interface Workout {
@@ -76,8 +77,9 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
           const todayFlag = isToday(day);
 
           return (
-            <View 
+            <Animated.View 
               key={dateStr} 
+              entering={FadeInUp.delay(i * 50).duration(500).springify()}
               style={[
                 styles.dayContainer, 
                 todayFlag && styles.dayContainerToday
@@ -90,24 +92,23 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
               <Text style={[styles.dayDate, todayFlag && styles.textToday]}>
                 {day.getDate()}
               </Text>
-
-              {/* Dots Container */}
+              
               <View style={styles.dotsContainer}>
                 {hasSession ? (
                   <View style={[styles.dotCompleted, todayFlag && styles.dotCompletedToday]} />
                 ) : hasWorkout ? (
                   <View style={[styles.dotPlanned, todayFlag && styles.dotPlannedToday]} />
                 ) : (
-                  <View style={styles.dotEmpty} /> // spacer
+                  <View style={styles.dotEmpty} />
                 )}
               </View>
-            </View>
+            </Animated.View>
           );
         })}
       </View>
 
       {/* Legend Area */}
-      <View style={styles.legendContainer}>
+      <Animated.View entering={FadeInDown.delay(400).duration(500).springify()} style={styles.legendContainer}>
         <View style={styles.legendItem}>
           <View style={styles.dotCompleted} />
           <Text style={styles.legendText}>Completed</Text>
@@ -116,7 +117,7 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
           <View style={styles.dotPlanned} />
           <Text style={styles.legendText}>Planned</Text>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }

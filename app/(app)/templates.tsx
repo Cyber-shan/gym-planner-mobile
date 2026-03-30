@@ -172,9 +172,8 @@ export default function TemplatesPage() {
               </View>
             </Animated.View>
 
-            <Animated.ScrollView
+            <ScrollView
               horizontal
-              entering={FadeInRight.delay(100).duration(500).springify()}
               showsHorizontalScrollIndicator={false}
               snapToInterval={CAROUSEL_ITEM_WIDTH + 16}
               decelerationRate="fast"
@@ -182,16 +181,20 @@ export default function TemplatesPage() {
               onScroll={handleScroll}
               scrollEventThrottle={16}
             >
-              {starterTemplatesList.map(template => (
-                <View key={template.id} style={styles.carouselSlide}>
+              {starterTemplatesList.map((template, i) => (
+                <Animated.View 
+                  key={template.id} 
+                  entering={FadeInRight.delay(i * 100 + 100).duration(600).springify()}
+                  style={styles.carouselSlide}
+                >
                   <TemplateCard
                     template={template}
                     isPrebuilt
                     onUse={() => openUseDialog(template.id)}
                   />
-                </View>
+                </Animated.View>
               ))}
-            </Animated.ScrollView>
+            </ScrollView>
 
             {/* Pagination Indicators */}
             <Animated.View entering={FadeInUp.delay(200).duration(500).springify()} style={styles.paginationContainer}>

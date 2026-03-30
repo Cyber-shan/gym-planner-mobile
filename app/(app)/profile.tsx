@@ -70,29 +70,29 @@ export default function ProfilePage() {
       </Animated.View>
 
       {/* ── Quick Stats ── */}
-      <Animated.View entering={FadeInUp.delay(100).duration(500).springify()} style={styles.statsGrid}>
-        <View style={styles.statCard}>
+      <View style={styles.statsGrid}>
+        <Animated.View entering={FadeInUp.delay(100).duration(500).springify()} style={styles.statCard}>
           <View style={[styles.statIconBadge, { backgroundColor: '#eff6ff' }]}>
             <FontAwesome5 name="dumbbell" size={14} color="#2563eb" />
           </View>
           <Text style={styles.statValue}>{totalWorkouts}</Text>
           <Text style={styles.statLabel}>Workouts</Text>
-        </View>
-        <View style={styles.statCard}>
+        </Animated.View>
+        <Animated.View entering={FadeInUp.delay(150).duration(500).springify()} style={styles.statCard}>
           <View style={[styles.statIconBadge, { backgroundColor: '#f0fdf4' }]}>
             <Feather name="bar-chart-2" size={14} color="#16a34a" />
           </View>
           <Text style={styles.statValue}>{totalSessions}</Text>
           <Text style={styles.statLabel}>Sessions</Text>
-        </View>
-        <View style={styles.statCard}>
+        </Animated.View>
+        <Animated.View entering={FadeInUp.delay(200).duration(500).springify()} style={styles.statCard}>
           <View style={[styles.statIconBadge, { backgroundColor: '#fefce8' }]}>
             <FontAwesome5 name="trophy" size={14} color="#ca8a04" />
           </View>
           <Text style={styles.statValue}>{totalPRsCount}</Text>
           <Text style={styles.statLabel}>PRs Set</Text>
-        </View>
-      </Animated.View>
+        </Animated.View>
+      </View>
 
       {/* ── Account ── */}
       <Animated.View entering={FadeInLeft.delay(200).duration(500).springify()} style={styles.section}>
@@ -126,14 +126,13 @@ export default function ProfilePage() {
       </Animated.View>
 
       {/* ── Workout Preferences ── */}
-      <Animated.View entering={FadeInRight.delay(300).duration(500).springify()} style={styles.section}>
-        <View style={styles.sectionHeader}>
+      <View style={styles.section}>
+        <Animated.View entering={FadeInRight.delay(300).duration(500).springify()} style={styles.sectionHeader}>
           <FontAwesome5 name="dumbbell" size={14} color="#717182" />
           <Text style={styles.sectionTitle}>Workout Preferences</Text>
-        </View>
+        </Animated.View>
         <View style={styles.sectionBodyNoPadding}>
-          {/* Replaced 'Select' with a tap-to-toggle component since RN has no native Select box */}
-          <View style={styles.row}>
+          <Animated.View entering={FadeInRight.delay(350).duration(500).springify()} style={styles.row}>
             <View>
               <Text style={styles.rowTitle}>Week Starts On</Text>
             </View>
@@ -144,8 +143,8 @@ export default function ProfilePage() {
               <Text style={styles.pickerStubText}>{weekStartsOn}</Text>
               <Feather name="chevron-down" size={14} color="#717182" />
             </TouchableOpacity>
-          </View>
-          <View style={[styles.row, { borderTopWidth: 1, borderTopColor: '#f3f4f6' }]}>
+          </Animated.View>
+          <Animated.View entering={FadeInRight.delay(400).duration(500).springify()} style={[styles.row, { borderTopWidth: 1, borderTopColor: '#f3f4f6' }]}>
             <View>
               <Text style={styles.rowTitle}>Weight Units</Text>
             </View>
@@ -156,33 +155,33 @@ export default function ProfilePage() {
               <Text style={styles.pickerStubText}>{weightUnit}</Text>
               <Feather name="chevron-down" size={14} color="#717182" />
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
-      </Animated.View>
+      </View>
 
       {/* ── Notifications ── */}
-      <Animated.View entering={FadeInLeft.delay(400).duration(500).springify()} style={styles.section}>
-        <View style={styles.sectionHeader}>
+      <View style={styles.section}>
+        <Animated.View entering={FadeInLeft.delay(400).duration(500).springify()} style={styles.sectionHeader}>
           <Feather name="bell" size={16} color="#717182" />
           <Text style={styles.sectionTitle}>Notifications</Text>
-        </View>
+        </Animated.View>
         <View style={styles.sectionBodyNoPadding}>
-          <View style={styles.row}>
+          <Animated.View entering={FadeInLeft.delay(450).duration(500).springify()} style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>Push Notifications</Text>
               <Text style={styles.rowSubtitle}>Receive reminders about workouts</Text>
             </View>
             <Switch value={notifications} onValueChange={setNotifications} />
-          </View>
-          <View style={[styles.row, { borderTopWidth: 1, borderTopColor: '#f3f4f6' }]}>
+          </Animated.View>
+          <Animated.View entering={FadeInLeft.delay(500).duration(500).springify()} style={[styles.row, { borderTopWidth: 1, borderTopColor: '#f3f4f6' }]}>
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>Rest Timer Alerts</Text>
               <Text style={styles.rowSubtitle}>Alert when rest period is over</Text>
             </View>
             <Switch value={restReminders} onValueChange={setRestReminders} />
-          </View>
+          </Animated.View>
         </View>
-      </Animated.View>
+      </View>
 
       {/* ── Save Settings ── */}
       <Animated.View entering={FadeInUp.delay(500).duration(500).springify()}>
