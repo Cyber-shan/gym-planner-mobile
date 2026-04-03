@@ -1,8 +1,7 @@
+import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { isSameWeek, parseISO, startOfDay, subDays } from 'date-fns';
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight } from 'react-native-reanimated';
-import { FontAwesome5, Feather } from '@expo/vector-icons';
-import { isSameWeek, startOfWeek, subWeeks, parseISO, isSameDay, subDays, startOfDay } from 'date-fns';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import { useSettings } from '../contexts/SettingsContext';
 
 export interface Workout {
@@ -66,7 +65,7 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
   const { weightUnit, convertToDisplay } = useSettings();
   const stats = useMemo(() => {
     const now = new Date();
-    
+
     // Helper to parse date strings safely in local time
     const parseLocalOrISO = (dateStr: string) => {
       if (!dateStr) return new Date(0);
@@ -76,11 +75,11 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
     };
 
     // 1. Workouts This Week
-    const sessionsThisWeek = sessions.filter(s => 
+    const sessionsThisWeek = sessions.filter(s =>
       isSameWeek(parseLocalOrISO(s.completedAt), now, { weekStartsOn: 1 })
     );
     const workoutsThisWeek = sessionsThisWeek.length;
-    
+
     // Total planned for this week
     const plannedThisWeek = workouts.filter(w => {
       const wDate = parseLocalOrISO(w.date);
@@ -115,7 +114,7 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
 
     let streakDays = 0;
     let curr = startOfDay(now);
-    
+
     // Check if streak is alive (session today or yesterday)
     const hasToday = sessionDates.has(`${curr.getFullYear()}-${curr.getMonth() + 1}-${curr.getDate()}`);
     const yesterday = subDays(curr, 1);
@@ -175,42 +174,34 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
 
   return (
     <View style={styles.container}>
-      <Animated.View entering={FadeInDown.delay(0).duration(500).springify()} style={{ width: cardWidth }}>
-        <StatCard
-          icon={<FontAwesome5 name="dumbbell" size={14} color="#2563eb" />}
-          label="This Week"
-          value={`${stats.workoutsThisWeek}`}
-          sub="planned"
-          colorBg="#eff6ff"
-        />
-      </Animated.View>
-      <Animated.View entering={FadeInDown.delay(100).duration(500).springify()} style={{ width: cardWidth }}>
-        <StatCard
-          icon={<Feather name="trending-up" size={14} color="#16a34a" />}
-          label="Weekly Vol."
-          value={stats.volume}
-          sub="lifted"
-          colorBg="#f0fdf4"
-        />
-      </Animated.View>
-      <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={{ width: cardWidth }}>
-        <StatCard
-          icon={<FontAwesome5 name="fire" size={14} color="#f97316" />}
-          label="Streak"
-          value={stats.streak}
-          sub="consecutive"
-          colorBg="#fff7ed"
-        />
-      </Animated.View>
-      <Animated.View entering={FadeInDown.delay(300).duration(500).springify()} style={{ width: cardWidth }}>
-        <StatCard
-          icon={<FontAwesome5 name="bullseye" size={14} color="#9333ea" />}
-          label="Top Muscle"
-          value={stats.topMuscle}
-          sub="this week"
-          colorBg="#faf5ff"
-        />
-      </Animated.View>
+      <StatCard
+        icon={<FontAwesome5 name="dumbbell" size={14} color="#2563eb" />}
+        label="This Week"
+        value={`${stats.workoutsThisWeek}`}
+        sub="planned"
+        colorBg="#eff6ff"
+      />
+      <StatCard
+        icon={<Feather name="trending-up" size={14} color="#16a34a" />}
+        label="Weekly Vol."
+        value={stats.volume}
+        sub="lifted"
+        colorBg="#f0fdf4"
+      />
+      <StatCard
+        icon={<FontAwesome5 name="fire" size={14} color="#f97316" />}
+        label="Streak"
+        value={stats.streak}
+        sub="consecutive"
+        colorBg="#fff7ed"
+      />
+      <StatCard
+        icon={<FontAwesome5 name="bullseye" size={14} color="#9333ea" />}
+        label="Top Muscle"
+        value={stats.topMuscle}
+        sub="this week"
+        colorBg="#faf5ff"
+      />
     </View>
   );
 }
@@ -231,7 +222,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
-    width: '100%', // StatCard takes full width of Animated.View
   },
   iconContainer: {
     width: 36,

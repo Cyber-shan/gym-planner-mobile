@@ -1,22 +1,21 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
+  SectionList,
   StyleSheet,
   Text,
-  TextInput, 
+  TextInput,
   TouchableOpacity,
-  View,
-  SectionList
+  View
 } from 'react-native';
-import { getCategoryColor } from '../lib/colors';
-import { exerciseDatabase, ExerciseTemplate } from '../data/exerciseDatabase';
-import { Exercise } from './WorkoutCard';
 import { useSettings } from '../contexts/SettingsContext';
+import { exerciseDatabase, ExerciseTemplate } from '../data/exerciseDatabase';
+import { getCategoryColor } from '../lib/colors';
+import { Exercise } from './WorkoutCard';
 
 interface AddExerciseDialogProps {
   open: boolean;
@@ -49,7 +48,7 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
       if (!grouped[ex.category]) grouped[ex.category] = [];
       grouped[ex.category].push(ex);
     });
-    
+
     const categories = Object.keys(grouped).sort();
     return categories.map(cat => ({
       title: cat,
@@ -334,7 +333,7 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
     <Modal visible={open} transparent animationType="slide" onRequestClose={() => handleDialogOpenChange(false)}>
       <View style={styles.overlay}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.kbView}
         >
           <View style={styles.content}>
@@ -344,7 +343,7 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
                   {flowStep === "select" ? "Add Exercise" : flowStep === "browse" ? "Browse Exercises" : "Create Custom Exercise"}
                 </Text>
                 <TouchableOpacity onPress={() => handleDialogOpenChange(false)}>
-                  <Feather name="x" size={2} color="#717182" />
+                  <Feather name="x" size={24} color="#717182" />
                 </TouchableOpacity>
               </View>
               <Text style={styles.description}>
@@ -358,7 +357,7 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
 
 
 
-            <View style={{ flexShrink: 1, minHeight: 150 }}>
+            <View style={styles.flowWrapper}>
               {flowStep === "select" && renderSelectFlow()}
               {flowStep === "browse" && renderBrowseFlow()}
               {flowStep === "custom" && renderCustomFlow()}
@@ -373,19 +372,20 @@ export function AddExerciseDialog({ open, onOpenChange, onAdd }: AddExerciseDial
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 16 },
   kbView: { width: '100%', alignItems: 'center' },
-  content: { width: '100%', maxWidth: 500, backgroundColor: '#ffffff', borderRadius: 16, padding: 24, maxHeight: '94%' },
+  content: { width: '100%', maxWidth: 500, backgroundColor: '#ffffff', borderRadius: 20, paddingTop: 24, paddingHorizontal: 24, paddingBottom: 32, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84 },
+  flowWrapper: { width: '100%' },
   header: { marginBottom: 16 },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   title: { fontSize: 18, fontWeight: '700', color: '#0a0a0a' },
   description: { fontSize: 14, color: '#717182' },
-  flowContainer: { flexShrink: 1, paddingBottom: 24 },
+  flowContainer: { width: '100%' },
   actionCard: { flexDirection: 'row', alignItems: 'flex-start', padding: 16, borderWidth: 2, borderColor: '#e5e7eb', borderRadius: 12, marginBottom: 12, backgroundColor: '#ffffff' },
   actionIconWrapper: { width: 48, height: 48, borderRadius: 8, backgroundColor: 'rgba(3, 2, 19, 0.05)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   actionContent: { flex: 1 },
   actionTitle: { fontSize: 16, fontWeight: '600', color: '#0a0a0a', marginBottom: 4 },
   actionSubtitle: { fontSize: 13, color: '#717182', lineHeight: 18 },
   formGroupSpacer: { gap: 12, paddingBottom: 16 },
-  label: { fontSize: 14, fontWeight: '500', color: '#0a0a0a', marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', color: '#0a0a0a', marginBottom: 8 },
   searchContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, paddingHorizontal: 12, height: 44, marginBottom: 12 },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, height: '100%', fontSize: 16 },
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   exDetails: { fontSize: 12, color: '#717182' },
   emptySearch: { padding: 24, alignItems: 'center' },
   emptySearchText: { color: '#717182', fontSize: 14 },
-  input: { height: 44, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, paddingHorizontal: 12, fontSize: 16, color: '#0a0a0a', backgroundColor: '#ffffff' },
+  input: { height: 48, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, paddingHorizontal: 12, fontSize: 16, color: '#0a0a0a', backgroundColor: '#ffffff' },
   selectedContent: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f9fafb', padding: 12, borderRadius: 8, marginBottom: 16 },
   badge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, marginTop: 4 },
   badgeText: { fontSize: 10, fontWeight: '600' },
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   colGroup: { flex: 1 },
   formGroup: { marginBottom: 16 },
   textArea: { height: 80, paddingTop: 10, textAlignVertical: 'top' },
-  footer: { flexDirection: 'row', gap: 12, marginTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6', paddingTop: 16 },
+  footer: { flexDirection: 'row', gap: 12, marginTop: 16, borderTopWidth: 1, borderTopColor: '#f3f4f6', paddingTop: 16 },
   cancelButton: { flex: 1, paddingVertical: 14, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, alignItems: 'center' },
   cancelButtonText: { color: '#0a0a0a', fontSize: 14, fontWeight: '600' },
   submitButton: { flex: 1, paddingVertical: 14, backgroundColor: '#030213', borderRadius: 8, alignItems: 'center' },

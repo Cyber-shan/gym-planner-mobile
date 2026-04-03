@@ -1,9 +1,9 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight } from 'react-native-reanimated';
-import { useIsFocused } from '@react-navigation/native';
+import Animated, { FadeInLeft, FadeInRight, FadeInUp } from 'react-native-reanimated';
 import { DatePicker } from '../../components/ui/DatePicker';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTemplates } from '../../contexts/TemplateContext';
@@ -172,8 +172,9 @@ export default function TemplatesPage() {
               </View>
             </Animated.View>
 
-            <ScrollView
+            <Animated.ScrollView
               horizontal
+              entering={FadeInRight.delay(100).duration(500).springify()}
               showsHorizontalScrollIndicator={false}
               snapToInterval={CAROUSEL_ITEM_WIDTH + 16}
               decelerationRate="fast"
@@ -181,20 +182,16 @@ export default function TemplatesPage() {
               onScroll={handleScroll}
               scrollEventThrottle={16}
             >
-              {starterTemplatesList.map((template, i) => (
-                <Animated.View 
-                  key={template.id} 
-                  entering={FadeInRight.delay(i * 100 + 100).duration(600).springify()}
-                  style={styles.carouselSlide}
-                >
+              {starterTemplatesList.map(template => (
+                <View key={template.id} style={styles.carouselSlide}>
                   <TemplateCard
                     template={template}
                     isPrebuilt
                     onUse={() => openUseDialog(template.id)}
                   />
-                </Animated.View>
+                </View>
               ))}
-            </ScrollView>
+            </Animated.ScrollView>
 
             {/* Pagination Indicators */}
             <Animated.View entering={FadeInUp.delay(200).duration(500).springify()} style={styles.paginationContainer}>
@@ -231,8 +228,8 @@ export default function TemplatesPage() {
           ) : (
             <View style={styles.listContainer}>
               {userTemplatesList.map((template, i) => (
-                <Animated.View 
-                  key={template.id} 
+                <Animated.View
+                  key={template.id}
                   entering={FadeInUp.delay(i * 100 + 400).duration(500).springify()}
                   style={{ marginBottom: 16 }}
                 >

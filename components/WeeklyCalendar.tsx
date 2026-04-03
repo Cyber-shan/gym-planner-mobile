@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSettings } from '../contexts/SettingsContext';
 
 export interface Workout {
@@ -29,9 +28,9 @@ const formatDate = (d: Date) => {
 
 const isToday = (d: Date) => {
   const t = new Date();
-  return d.getDate() === t.getDate() && 
-         d.getMonth() === t.getMonth() && 
-         d.getFullYear() === t.getFullYear();
+  return d.getDate() === t.getDate() &&
+    d.getMonth() === t.getMonth() &&
+    d.getFullYear() === t.getFullYear();
 };
 // ────────────────────────────────────────────────────────────────────
 
@@ -41,7 +40,7 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
   const days = useMemo(() => {
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
-    
+
     // Calculate start of week based on user preference
     let diff = 0;
     if (weekStartsOn === 'monday') {
@@ -49,9 +48,9 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
     } else {
       diff = today.getDate() - dayOfWeek;
     }
-    
+
     const weekStart = new Date(today.getFullYear(), today.getMonth(), diff);
-    weekStart.setHours(0,0,0,0);
+    weekStart.setHours(0, 0, 0, 0);
 
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(weekStart);
@@ -60,55 +59,55 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
     });
   }, [weekStartsOn]);
 
-  const dayLabels = weekStartsOn === 'monday' 
+  const dayLabels = weekStartsOn === 'monday'
     ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <View style={styles.card}>
       <Text style={styles.headerTitle}>THIS WEEK</Text>
-      
+
       <View style={styles.grid}>
         {days.map((day, i) => {
           const dateStr = formatDate(day);
-          
+
           const hasWorkout = workouts.some(w => w.date === dateStr);
           const hasSession = sessions.some(s => s.date && s.date.startsWith(dateStr));
           const todayFlag = isToday(day);
 
           return (
-            <Animated.View 
-              key={dateStr} 
-              entering={FadeInUp.delay(i * 50).duration(500).springify()}
+            <View
+              key={dateStr}
               style={[
-                styles.dayContainer, 
+                styles.dayContainer,
                 todayFlag && styles.dayContainerToday
               ]}
             >
               <Text style={[styles.dayLabel, todayFlag && styles.textToday]}>
                 {dayLabels[i]}
               </Text>
-              
+
               <Text style={[styles.dayDate, todayFlag && styles.textToday]}>
                 {day.getDate()}
               </Text>
-              
+
+              {/* Dots Container */}
               <View style={styles.dotsContainer}>
                 {hasSession ? (
                   <View style={[styles.dotCompleted, todayFlag && styles.dotCompletedToday]} />
                 ) : hasWorkout ? (
                   <View style={[styles.dotPlanned, todayFlag && styles.dotPlannedToday]} />
                 ) : (
-                  <View style={styles.dotEmpty} />
+                  <View style={styles.dotEmpty} /> // spacer
                 )}
               </View>
-            </Animated.View>
+            </View>
           );
         })}
       </View>
 
       {/* Legend Area */}
-      <Animated.View entering={FadeInDown.delay(400).duration(500).springify()} style={styles.legendContainer}>
+      <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
           <View style={styles.dotCompleted} />
           <Text style={styles.legendText}>Completed</Text>
@@ -117,7 +116,7 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
           <View style={styles.dotPlanned} />
           <Text style={styles.legendText}>Planned</Text>
         </View>
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -176,7 +175,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#22c55e', 
+    backgroundColor: '#22c55e',
   },
   dotCompletedToday: {
     backgroundColor: '#ffffff',
@@ -186,7 +185,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#60a5fa', 
+    borderColor: '#60a5fa',
   },
   dotPlannedToday: {
     borderColor: '#ffffff',
