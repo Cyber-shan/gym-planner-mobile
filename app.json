@@ -2,7 +2,7 @@
   "expo": {
     "name": "Gym Planner",
     "slug": "gym-planner-mobile",
-    "version": "1.3",
+    "version": "1.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gymplannermobile",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.cybershan.gymplannermobile",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#0a0a0a",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -41,7 +41,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
