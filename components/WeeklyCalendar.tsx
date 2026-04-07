@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSettings } from '../contexts/SettingsContext';
 
 export interface Workout {
@@ -28,9 +28,9 @@ const formatDate = (d: Date) => {
 
 const isToday = (d: Date) => {
   const t = new Date();
-  return d.getDate() === t.getDate() && 
-         d.getMonth() === t.getMonth() && 
-         d.getFullYear() === t.getFullYear();
+  return d.getDate() === t.getDate() &&
+    d.getMonth() === t.getMonth() &&
+    d.getFullYear() === t.getFullYear();
 };
 // ────────────────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
   const days = useMemo(() => {
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
-    
+
     // Calculate start of week based on user preference
     let diff = 0;
     if (weekStartsOn === 'monday') {
@@ -48,9 +48,9 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
     } else {
       diff = today.getDate() - dayOfWeek;
     }
-    
+
     const weekStart = new Date(today.getFullYear(), today.getMonth(), diff);
-    weekStart.setHours(0,0,0,0);
+    weekStart.setHours(0, 0, 0, 0);
 
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(weekStart);
@@ -59,34 +59,34 @@ export function WeeklyCalendar({ workouts = [], sessions = [] }: WeeklyCalendarP
     });
   }, [weekStartsOn]);
 
-  const dayLabels = weekStartsOn === 'monday' 
+  const dayLabels = weekStartsOn === 'monday'
     ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <View style={styles.card}>
       <Text style={styles.headerTitle}>THIS WEEK</Text>
-      
+
       <View style={styles.grid}>
         {days.map((day, i) => {
           const dateStr = formatDate(day);
-          
+
           const hasWorkout = workouts.some(w => w.date === dateStr);
           const hasSession = sessions.some(s => s.date && s.date.startsWith(dateStr));
           const todayFlag = isToday(day);
 
           return (
-            <View 
-              key={dateStr} 
+            <View
+              key={dateStr}
               style={[
-                styles.dayContainer, 
+                styles.dayContainer,
                 todayFlag && styles.dayContainerToday
               ]}
             >
               <Text style={[styles.dayLabel, todayFlag && styles.textToday]}>
                 {dayLabels[i]}
               </Text>
-              
+
               <Text style={[styles.dayDate, todayFlag && styles.textToday]}>
                 {day.getDate()}
               </Text>
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#22c55e', 
+    backgroundColor: '#22c55e',
   },
   dotCompletedToday: {
     backgroundColor: '#ffffff',
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#60a5fa', 
+    borderColor: '#60a5fa',
   },
   dotPlannedToday: {
     borderColor: '#ffffff',

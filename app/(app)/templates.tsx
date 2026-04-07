@@ -1,13 +1,14 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInLeft, FadeInRight, FadeInUp } from 'react-native-reanimated';
 import { DatePicker } from '../../components/ui/DatePicker';
+import { useSettings } from '../../contexts/SettingsContext';
 import { useTemplates } from '../../contexts/TemplateContext';
 import { useWorkouts } from '../../contexts/WorkoutContext';
-import { useSettings } from '../../contexts/SettingsContext';
 import { getCategoryColor } from '../../lib/colors';
-import { stripUnit } from '../../lib/utils';
 
 // ─── Types ─────────────────────────────────────────────────────────────
 export type WorkoutTemplate = {
@@ -88,6 +89,7 @@ function TemplateCard({ template, isPrebuilt, onUse, onDelete }: TemplateCardPro
 // ─── Main Page ───
 export default function TemplatesPage() {
   const router = useRouter();
+  const isFocused = useIsFocused();
   const { createWorkoutFromTemplate } = useWorkouts();
   const { starterTemplatesList, userTemplatesList, deleteTemplate } = useTemplates();
 
@@ -157,21 +159,22 @@ export default function TemplatesPage() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView key={isFocused ? 'focused' : 'not-focused'} contentContainerStyle={styles.content}>
 
         {/* ── Pre-built Templates Horizontal Scroll (replacing Web Carousel) ── */}
         {starterTemplatesList.length > 0 && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
+            <Animated.View entering={FadeInLeft.delay(0).duration(500).springify()} style={styles.sectionHeader}>
               <FontAwesome5 name="magic" size={12} color="#030213" style={{ marginRight: 8 }} />
               <Text style={styles.sectionTitle}>Starter Templates</Text>
               <View style={styles.badgeSolid}>
                 <Text style={styles.badgeSolidText}>Built-in</Text>
               </View>
-            </View>
+            </Animated.View>
 
-            <ScrollView
+            <Animated.ScrollView
               horizontal
+              entering={FadeInRight.delay(100).duration(500).springify()}
               showsHorizontalScrollIndicator={false}
               snapToInterval={CAROUSEL_ITEM_WIDTH + 16}
               decelerationRate="fast"
@@ -188,10 +191,10 @@ export default function TemplatesPage() {
                   />
                 </View>
               ))}
-            </ScrollView>
+            </Animated.ScrollView>
 
             {/* Pagination Indicators */}
-            <View style={styles.paginationContainer}>
+            <Animated.View entering={FadeInUp.delay(200).duration(500).springify()} style={styles.paginationContainer}>
               {starterTemplatesList.map((_, i) => (
                 <View
                   key={i}
@@ -201,19 +204,19 @@ export default function TemplatesPage() {
                   ]}
                 />
               ))}
-            </View>
+            </Animated.View>
           </View>
         )}
 
         {/* ── My Templates ── */}
         <View style={styles.section}>
-          <View style={styles.myTemplatesHeader}>
+          <Animated.View entering={FadeInLeft.delay(300).duration(500).springify()} style={styles.myTemplatesHeader}>
             <Text style={styles.sectionTitle}>My Templates</Text>
             <Text style={styles.savedCountText}>{userTemplatesList.length} saved</Text>
-          </View>
+          </Animated.View>
 
           {userTemplatesList.length === 0 ? (
-            <View style={styles.emptyState}>
+            <Animated.View entering={FadeInUp.delay(400).duration(500).springify()} style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
                 <Feather name="copy" size={32} color="#9ca3af" />
               </View>
@@ -221,17 +224,21 @@ export default function TemplatesPage() {
               <Text style={styles.emptySubtitle}>
                 Save any workout as a template using the "Save as Template" button on workout cards. Then reuse them anytime.
               </Text>
-            </View>
+            </Animated.View>
           ) : (
             <View style={styles.listContainer}>
-              {userTemplatesList.map(template => (
-                <View key={template.id} style={{ marginBottom: 16 }}>
+              {userTemplatesList.map((template, i) => (
+                <Animated.View
+                  key={template.id}
+                  entering={FadeInUp.delay(i * 100 + 400).duration(500).springify()}
+                  style={{ marginBottom: 16 }}
+                >
                   <TemplateCard
                     template={template}
                     onUse={() => openUseDialog(template.id)}
                     onDelete={() => handleDelete(template.id, template.name)}
                   />
-                </View>
+                </Animated.View>
               ))}
             </View>
           )}

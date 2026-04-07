@@ -1,7 +1,7 @@
+import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { isSameWeek, parseISO, startOfDay, subDays } from 'date-fns';
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { FontAwesome5, Feather } from '@expo/vector-icons';
-import { isSameWeek, startOfWeek, subWeeks, parseISO, isSameDay, subDays, startOfDay } from 'date-fns';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import { useSettings } from '../contexts/SettingsContext';
 
 export interface Workout {
@@ -65,7 +65,7 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
   const { weightUnit, convertToDisplay } = useSettings();
   const stats = useMemo(() => {
     const now = new Date();
-    
+
     // Helper to parse date strings safely in local time
     const parseLocalOrISO = (dateStr: string) => {
       if (!dateStr) return new Date(0);
@@ -75,11 +75,11 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
     };
 
     // 1. Workouts This Week
-    const sessionsThisWeek = sessions.filter(s => 
+    const sessionsThisWeek = sessions.filter(s =>
       isSameWeek(parseLocalOrISO(s.completedAt), now, { weekStartsOn: 1 })
     );
     const workoutsThisWeek = sessionsThisWeek.length;
-    
+
     // Total planned for this week
     const plannedThisWeek = workouts.filter(w => {
       const wDate = parseLocalOrISO(w.date);
@@ -114,7 +114,7 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
 
     let streakDays = 0;
     let curr = startOfDay(now);
-    
+
     // Check if streak is alive (session today or yesterday)
     const hasToday = sessionDates.has(`${curr.getFullYear()}-${curr.getMonth() + 1}-${curr.getDate()}`);
     const yesterday = subDays(curr, 1);

@@ -12,8 +12,8 @@ import {
   View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ActiveExercise, CompletedSession, useWorkouts } from '../../../contexts/WorkoutContext';
 import { useSettings } from '../../../contexts/SettingsContext';
+import { ActiveExercise, CompletedSession, useWorkouts } from '../../../contexts/WorkoutContext';
 import { getCategoryColor } from '../../../lib/colors';
 import { stripUnit } from '../../../lib/utils';
 
@@ -282,25 +282,24 @@ export default function ActiveWorkoutPage() {
                 >
                   <Text style={styles.setNumber}>{set.setNumber}</Text>
 
-                  <View style={styles.valueWrapper}>
-                    <Text style={styles.valueText}>{set.actualReps}</Text>
-                    <Feather name="lock" size={8} color="#9ca3af" style={styles.lockIcon} />
+                  <View style={[styles.valueWrapper, set.completed && styles.valueWrapperDone]}>
+                    <Text style={[styles.valueText, set.completed && styles.valueTextDone]}>{set.actualReps}</Text>
+                    <Feather name="lock" size={8} color={set.completed ? "#059669" : "#9ca3af"} style={styles.lockIcon} />
                   </View>
 
-                  <View style={styles.valueWrapper}>
-                    <Text style={styles.valueText}>
+                  <View style={[styles.valueWrapper, set.completed && styles.valueWrapperDone]}>
+                    <Text style={[styles.valueText, set.completed && styles.valueTextDone]}>
                       {stripUnit(set.weight) || '0'} 
-                      {set.weight?.toLowerCase() !== 'bodyweight' && <Text style={styles.unitText}> {weightUnit}</Text>}
+                      {set.weight?.toLowerCase() !== 'bodyweight' && <Text style={[styles.unitText, set.completed && styles.valueTextDone]}> {weightUnit}</Text>}
                     </Text>
-                    <Feather name="lock" size={8} color="#9ca3af" style={styles.lockIcon} />
+                    <Feather name="lock" size={8} color={set.completed ? "#059669" : "#9ca3af"} style={styles.lockIcon} />
                   </View>
- village
 
                   <TouchableOpacity
                     style={[styles.checkButton, set.completed && styles.checkButtonDone]}
                     onPress={() => handleToggleSet(exIdx, setIdx)}
                   >
-                    <Feather name={set.completed ? "check" : "circle"} size={16} color={set.completed ? "#ffffff" : "#d1d5db"} />
+                    <Feather name={set.completed ? "check" : "circle"} size={set.completed ? 14 : 16} color={set.completed ? "#16a34a" : "#d1d5db"} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -433,7 +432,7 @@ const styles = StyleSheet.create({
   exerciseCard: { backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 16, overflow: 'hidden' },
   exerciseCardDone: { borderColor: '#d1fae5', backgroundColor: '#f0fdf4' },
 
-  exerciseHeader: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', backgroundColor: '#f9fafb' },
+  exerciseHeader: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   exerciseTitleContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   exerciseName: { fontSize: 15, fontWeight: '600', color: '#0a0a0a', marginRight: 8 },
   categoryBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
@@ -444,12 +443,12 @@ const styles = StyleSheet.create({
   tableLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', textTransform: 'uppercase' },
 
   setRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  setRowDone: { backgroundColor: 'rgba(16, 185, 129, 0.05)' },
+  setRowDone: { backgroundColor: 'rgba(16, 185, 129, 0.08)' },
   setNumber: { width: 30, fontSize: 14, color: '#717182', fontWeight: '500' },
   valueWrapper: {
     flex: 1,
     marginHorizontal: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 6,
@@ -460,9 +459,24 @@ const styles = StyleSheet.create({
   },
   lockIcon: { position: 'absolute', top: 4, right: 4 },
   valueText: { fontSize: 16, fontWeight: '600', color: '#4b5563' },
+  valueTextDone: { color: '#065f46' },
+  valueWrapperDone: { backgroundColor: 'transparent', borderColor: '#34d399' },
   unitText: { fontSize: 12, color: '#9ca3af', fontWeight: '400' },
   checkButton: { width: 40, height: 40, alignItems: 'flex-end', justifyContent: 'center' },
-  checkButtonDone: { /* color changes via icon props */ },
+  checkButtonDone: { 
+    backgroundColor: '#ffffff', 
+    borderRadius: 6, 
+    width: 28, 
+    height: 28, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+    marginLeft: 12
+  },
 
   restBanner: {
     position: 'absolute',
