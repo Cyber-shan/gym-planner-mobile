@@ -1,4 +1,4 @@
-import { AppState } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
@@ -15,7 +15,7 @@ export const supabase = createClient(supabaseUrl.trim(), supabaseAnonKey.trim(),
   },
 });
 
-AppState.addEventListener('change', (state) => {
+AppState.addEventListener('change', (state: AppStateStatus) => {
   if (state === 'active') {
     supabase.auth.startAutoRefresh();
   } else {
