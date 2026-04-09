@@ -1,7 +1,5 @@
 # Gym Planner Mobile 👋
 
-![Hero Image](./assets/images/hero.png)
-
 A professional, high-performance gym tracking application built with **Expo** and **React Native**. Designed for serious athletes who demand a seamless, premium interface for planning and tracking their fitness journey.
 
 ---
@@ -30,9 +28,9 @@ A professional, high-performance gym tracking application built with **Expo** an
 > [!TIP]
 > This section is reserved for your project screenshots. Replace the placeholders below with your actual UI captures!
 
-| Dashboard View | Active Workout | Progress Analytics |
+| Dashboard View | Templates View | Progress Analytics |
 | :--- | :--- | :--- |
-| ![Dashboard Placeholder](https://via.placeholder.com/300x600?text=Dashboard+View) | ![Active Workout Placeholder](https://via.placeholder.com/300x600?text=Active+Workout) | ![Progress Analytics Placeholder](https://via.placeholder.com/300x600?text=Progress+Analytics) |
+| ![Dashboard](./assets/images/dashboard_long.jpg) | ![Templates](./assets/images/templates_long.jpg) | ![Progress](./assets/images/progress_long.jpg) |
 
 ---
 
