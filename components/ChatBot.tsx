@@ -8,16 +8,16 @@ import {
   FlatList, 
   KeyboardAvoidingView, 
   Platform, 
-  SafeAreaView,
-  Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  Pressable,
+  Dimensions
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { 
   FadeIn, 
   FadeOut, 
-  SlideInDown, 
-  SlideOutDown 
+  ZoomIn, 
+  ZoomOut 
 } from 'react-native-reanimated';
 import { useWorkouts } from '../contexts/WorkoutContext';
 
@@ -33,7 +33,7 @@ interface ChatBotProps {
   onClose: () => void;
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function ChatBot({ isVisible, onClose }: ChatBotProps) {
   const { totalPRsCount, completedSessions } = useWorkouts();
@@ -115,12 +115,15 @@ export default function ChatBot({ isVisible, onClose }: ChatBotProps) {
   if (!isVisible) return null;
 
   return (
-    <Animated.View 
-      entering={SlideInDown.springify()} 
-      exiting={SlideOutDown.duration(300)}
-      style={styles.container}
-    >
-      <SafeAreaView style={styles.safeArea}>
+    <View style={styles.overlay}>
+      {/* Backdrop to close when clicking outside */}
+      <Pressable style={styles.backdrop} onPress={onClose} />
+      
+      <Animated.View 
+        entering={ZoomIn.duration(300).springify()} 
+        exiting={ZoomOut.duration(200)}
+        style={styles.container}
+      >
         <View style={styles.header}>
           <View style={styles.headerInfo}>
             <View style={styles.botIcon}>
@@ -160,19 +163,19 @@ export default function ChatBot({ isVisible, onClose }: ChatBotProps) {
           ListFooterComponent={isTyping ? (
             <View style={styles.typingIndicator}>
               <ActivityIndicator size="small" color="#717182" />
-              <Text style={styles.typingText}>LogLift is thinking...</Text>
+              <Text style={styles.typingText}>Thinking...</Text>
             </View>
           ) : null}
         />
 
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
         >
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Ask me anything..."
+              placeholder="Message..."
               placeholderTextColor="#717182"
               value={inputText}
               onChangeText={setInputText}
@@ -183,71 +186,85 @@ export default function ChatBot({ isVisible, onClose }: ChatBotProps) {
               style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
               disabled={!inputText.trim()}
             >
-              <Feather name="send" size={20} color="white" />
+              <Feather name="send" size={18} color="white" />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Animated.View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 2000,
   },
-  safeArea: {
-    flex: 1,
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  container: {
+    width: SCREEN_WIDTH * 0.85,
+    height: SCREEN_HEIGHT * 0.6,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    overflow: 'hidden',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f3f5',
   },
   headerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   botIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#030213',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: '#0a0a0a',
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: '#10b981', // Green for online status
+    fontSize: 11,
+    color: '#10b981',
   },
   closeButton: {
-    padding: 5,
+    padding: 4,
   },
   messageList: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 16,
+    paddingBottom: 24,
   },
   messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 20,
-    marginBottom: 15,
+    maxWidth: '85%',
+    padding: 10,
+    borderRadius: 16,
+    marginBottom: 12,
   },
   botBubble: {
     alignSelf: 'flex-start',
@@ -260,8 +277,8 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   messageText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 18,
   },
   botText: {
     color: '#0a0a0a',
@@ -270,47 +287,47 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   timestamp: {
-    fontSize: 10,
-    marginTop: 4,
-    color: '#717182',
+    fontSize: 9,
+    marginTop: 2,
+    color: '#a1a1aa',
     alignSelf: 'flex-end',
   },
   typingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginLeft: 10,
-    marginBottom: 20,
+    gap: 6,
+    marginLeft: 8,
+    marginBottom: 16,
   },
   typingText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#717182',
     fontStyle: 'italic',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: '#f3f3f5',
     backgroundColor: '#ffffff',
-    gap: 10,
+    gap: 8,
   },
   input: {
     flex: 1,
     backgroundColor: '#f9f9fb',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    maxHeight: 100,
-    fontSize: 15,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    maxHeight: 80,
+    fontSize: 14,
     color: '#0a0a0a',
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#030213',
     alignItems: 'center',
     justifyContent: 'center',
