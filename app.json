@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "Gym Planner",
-    "slug": "gym-planner-mobile",
+    "name": "LogLift",
+    "slug": "log-lift-mobile",
     "version": "1.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "gymplannermobile",
+    "scheme": "loglift",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.cybershan.gymplannermobile",
+      "package": "com.cybershan.loglift",
       "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#0a0a0a",

@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Animated, StyleSheet, Dimensions } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -145,7 +145,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>Gym Planner</Text>
+        <Text style={styles.title}>LogLift</Text>
         <Text style={styles.subtitle}>Your digital workout notebook</Text>
 
         {/* Feature pills */}
