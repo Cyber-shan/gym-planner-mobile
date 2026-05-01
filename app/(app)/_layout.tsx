@@ -1,9 +1,12 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter, useSegments } from 'expo-router';
 import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWorkouts } from '../../contexts/WorkoutContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ChatFAB from '../../components/ChatFAB';
+import ChatBot from '../../components/ChatBot';
+import { useState } from 'react';
 
 // Custom Header Component based on your design
 function AppHeader() {
@@ -25,7 +28,7 @@ function AppHeader() {
             <FontAwesome5 name="dumbbell" size={16} color="white" />
           </View>
           <View>
-            <Text style={styles.logoTitle}>Gym Planner</Text>
+            <Text style={styles.logoTitle}>LogLift</Text>
             <Text style={styles.logoSubtitle}>Your digital workout notebook</Text>
           </View>
         </TouchableOpacity>
@@ -40,13 +43,20 @@ function AppHeader() {
 }
 
 export default function AppLayout() {
+  const { exercisesWithRecentPRs } = useWorkouts();
   const insets = useSafeAreaInsets();
   const androidExtra = Platform.OS === 'android' ? 15 : 0;
   const bottomPadding = (insets.bottom > 0 ? insets.bottom : (Platform.OS === 'ios' ? 28 : 16)) + androidExtra;
   const tabHeight = 50 + bottomPadding;
+  const [isChatVisible, setIsChatVisible] = useState(false);
+  
+  const segments = useSegments();
+  // Hide FAB if we are in the active-workout route
+  const isFABVisible = !(segments as string[]).includes('active-workout');
 
   return (
-    <Tabs
+    <View style={{ flex: 1 }}>
+      <Tabs
       screenOptions={{
         header: () => <AppHeader />,
         tabBarActiveTintColor: '#030213',
@@ -85,6 +95,14 @@ export default function AppLayout() {
         options={{
           title: 'Progress',
           tabBarIcon: ({ color, size }) => <Feather name="trending-up" size={20} color={color} />,
+          tabBarBadge: exercisesWithRecentPRs.length > 0 ? "" : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: '#ef4444',
+            minWidth: 8,
+            height: 8,
+            borderRadius: 4,
+            marginTop: 4,
+          }
         }}
       />
       <Tabs.Screen
@@ -94,8 +112,26 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => <Feather name="user" size={20} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="active-workout/[workoutId]"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
-  );
+    
+    <ChatFAB 
+      onPress={() => setIsChatVisible(true)} 
+      visible={isFABVisible} 
+    />
+    
+    <ChatBot 
+      isVisible={isChatVisible} 
+      onClose={() => setIsChatVisible(false)} 
+    />
+  </View>
+);
 }
 
 const styles = StyleSheet.create({

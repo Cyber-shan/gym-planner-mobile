@@ -1,0 +1,537 @@
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { Exercise, Workout } from '../components/WorkoutCard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
+
+export interface ActiveSet {
+  setNumber: number;
+  plannedReps: number;
+  actualReps: number;
+  weight: string;
+  completed: boolean;
+}
+
+export interface ActiveExercise {
+  id: string;
+  name: string;
+  category?: string;
+  sets: ActiveSet[];
+}
+
+export interface CompletedSession {
+  id: string;
+  workoutId: string;
+  workoutName: string;
+  date: string;
+  completedAt: string;
+  durationMinutes: number;
+  exercises: ActiveExercise[];
+}
+
+type WorkoutContextType = {
+  workouts: Workout[];
+  isLoading: boolean;
+  completedSessions: CompletedSession[];
+  exercisesWithRecentPRs: string[];
+  totalPRsCount: number;
+  markPRAsSeen: (name: string) => void;
+  addWorkout: (name: string, date: string) => Promise<void>;
+  deleteWorkout: (id: string) => Promise<void>;
+  clearAllWorkouts: () => Promise<void>;
+  addExercise: (workoutId: string, exercise: Omit<Exercise, 'id'>) => Promise<void>;
+  deleteExercise: (workoutId: string, exerciseId: string) => Promise<void>;
+  updateExercise: (workoutId: string, exerciseId: string, updated: Partial<Exercise>) => Promise<void>;
+  createWorkoutFromTemplate: (name: string, date: string, exercises: any[]) => Promise<void>;
+  addCompletedSession: (session: Omit<CompletedSession, 'id'>) => Promise<void>;
+  refreshWorkouts: () => Promise<void>;
+};
+
+const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
+
+export function WorkoutProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [completedSessions, setCompletedSessions] = useState<CompletedSession[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const isDemo = user?.id === 'demo-user-id';
+
+  const fetchWorkouts = async () => {
+    if (!user) {
+      setWorkouts([]);
+      setIsLoading(false);
+      return;
+    }
+    if (isDemo) {
+      // Use local state (keep what's there)
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('workouts')
+        .select(`
+          id, name, date,
+          exercises ( id, name, sets, reps, weight, notes, category, image_url )
+        `)
+        .eq('user_id', user.id)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      // Map DB exercises to the Workout interface (image_url -> imageUrl)
+      const formatted: Workout[] = (data || []).map((w: any) => ({
+        id: w.id,
+        name: w.name,
+        date: w.date,
+        exercises: (w.exercises || []).map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          sets: e.sets,
+          reps: e.reps,
+          weight: e.weight,
+          notes: e.notes,
+          category: e.category,
+          imageUrl: e.image_url
+        }))
+      }));
+
+      setWorkouts(formatted);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCompletedSessions = async () => {
+    if (!user || isDemo) {
+      setCompletedSessions([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('completed_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formatted: CompletedSession[] = (data || []).map((s: any) => ({
+        id: s.id,
+        workoutId: s.workout_id,
+        workoutName: s.workout_name,
+        date: s.date,
+        completedAt: s.completed_at,
+        durationMinutes: s.duration_minutes,
+        exercises: s.exercises,
+      }));
+      setCompletedSessions(formatted);
+    } catch (e: any) {
+      console.error('Failed to fetch completed sessions:', e.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchWorkouts();
+    fetchCompletedSessions();
+  }, [user]);
+
+  // Handle seen PRs persistence
+  useEffect(() => {
+    if (user?.id) {
+      const loadSeenPRs = async () => {
+        try {
+          const key = `@seen_prs_${user.id}`;
+          const stored = await AsyncStorage.getItem(key);
+          if (stored) {
+            setSeenPRs(JSON.parse(stored));
+          } else {
+            setSeenPRs({});
+          }
+        } catch (e) {
+          console.error('Failed to load seen PRs:', e);
+        }
+      };
+      loadSeenPRs();
+    } else {
+      setSeenPRs({});
+    }
+  }, [user?.id]);
+
+  const addWorkout = async (name: string, date: string) => {
+    if (isDemo) {
+      const dummy: Workout = { id: Math.random().toString(), name, date, exercises: [] };
+      setWorkouts(prev => [dummy, ...prev]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('workouts')
+      .insert({ user_id: user?.id, name, date })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+    setWorkouts(prev => [{ ...data, exercises: [] }, ...prev]);
+  };
+
+  const deleteWorkout = async (id: string) => {
+    if (isDemo) {
+      setWorkouts(prev => prev.filter(w => w.id !== id));
+      return;
+    }
+
+    const { error } = await supabase.from('workouts').delete().eq('id', id);
+    if (error) throw error;
+    setWorkouts(prev => prev.filter(w => w.id !== id));
+  };
+  
+  const clearAllWorkouts = async () => {
+    if (isDemo) {
+      setWorkouts([]);
+      setCompletedSessions([]);
+      return;
+    }
+    
+    // Delete all user workouts (cascades to exercises)
+    const { error: wError } = await supabase.from('workouts').delete().eq('user_id', user?.id);
+    if (wError) throw wError;
+    
+    // Delete all completed sessions
+    const { error: sError } = await supabase.from('completed_sessions').delete().eq('user_id', user?.id);
+    if (sError) throw sError;
+    
+    setWorkouts([]);
+    setCompletedSessions([]);
+  };
+
+  const addExercise = async (workoutId: string, exercisePayload: Omit<Exercise, 'id'>) => {
+    if (isDemo) {
+      setWorkouts(prev => prev.map(w => {
+        if (w.id === workoutId) {
+          return { ...w, exercises: [...w.exercises, { ...exercisePayload, id: Math.random().toString() }] };
+        }
+        return w;
+      }));
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('exercises')
+      .insert({
+        workout_id: workoutId,
+        name: exercisePayload.name,
+        sets: exercisePayload.sets,
+        reps: exercisePayload.reps,
+        weight: exercisePayload.weight || null,
+        notes: exercisePayload.notes || null,
+        category: exercisePayload.category || null,
+        image_url: exercisePayload.imageUrl || null
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const mappedData: Exercise = {
+      id: data.id,
+      name: data.name,
+      sets: data.sets,
+      reps: data.reps,
+      weight: data.weight,
+      notes: data.notes,
+      category: data.category,
+      imageUrl: data.image_url
+    };
+
+    setWorkouts(prev => prev.map(w => {
+      if (w.id === workoutId) {
+        return { ...w, exercises: [...w.exercises, mappedData] };
+      }
+      return w;
+    }));
+  };
+
+  const deleteExercise = async (workoutId: string, exerciseId: string) => {
+    if (isDemo) {
+      setWorkouts(prev => prev.map(w => {
+        if (w.id === workoutId) {
+          return { ...w, exercises: w.exercises.filter(e => e.id !== exerciseId) };
+        }
+        return w;
+      }));
+      return;
+    }
+
+    const { error } = await supabase.from('exercises').delete().eq('id', exerciseId);
+    if (error) throw error;
+
+    setWorkouts(prev => prev.map(w => {
+      if (w.id === workoutId) {
+        return { ...w, exercises: w.exercises.filter(e => e.id !== exerciseId) };
+      }
+      return w;
+    }));
+  };
+
+  const updateExercise = async (workoutId: string, exerciseId: string, updated: Partial<Exercise>) => {
+    if (isDemo) {
+      setWorkouts(prev => prev.map(w => {
+        if (w.id === workoutId) {
+          return { ...w, exercises: w.exercises.map(e => e.id === exerciseId ? { ...e, ...updated } : e) };
+        }
+        return w;
+      }));
+      return;
+    }
+
+    const dbPayload: any = { ...updated };
+    if (dbPayload.imageUrl !== undefined) {
+      dbPayload.image_url = dbPayload.imageUrl;
+      delete dbPayload.imageUrl;
+    }
+
+    const { error } = await supabase.from('exercises').update(dbPayload).eq('id', exerciseId);
+    if (error) throw error;
+
+    setWorkouts(prev => prev.map(w => {
+      if (w.id === workoutId) {
+        return { ...w, exercises: w.exercises.map(e => e.id === exerciseId ? { ...e, ...updated } : e) };
+      }
+      return w;
+    }));
+  };
+
+  const createWorkoutFromTemplate = async (name: string, date: string, templateExercises: any[]) => {
+    if (isDemo) {
+      const dummy: Workout = {
+        id: Math.random().toString(),
+        name,
+        date,
+        exercises: templateExercises.map(e => ({ ...e, id: Math.random().toString() }))
+      };
+      setWorkouts(prev => [dummy, ...prev]);
+      return;
+    }
+
+    // 1. Insert Workout
+    const { data: wData, error: wError } = await supabase
+      .from('workouts')
+      .insert({ user_id: user?.id, name, date })
+      .select()
+      .single();
+
+    if (wError) throw wError;
+
+    // 2. Insert Exercises
+    if (templateExercises.length > 0) {
+      const exPayloads = templateExercises.map(e => ({
+        workout_id: wData.id,
+        name: e.name,
+        sets: e.sets || 0,
+        reps: e.reps || 0,
+        weight: e.weight || null,
+        notes: e.notes || null,
+        category: e.category || null,
+        image_url: e.imageUrl || null
+      }));
+
+      const { data: eData, error: eError } = await supabase
+        .from('exercises')
+        .insert(exPayloads)
+        .select();
+
+      if (eError) throw eError;
+
+      const mappedExercises = (eData || []).map((e: any) => ({
+        id: e.id,
+        name: e.name,
+        sets: e.sets,
+        reps: e.reps,
+        weight: e.weight,
+        notes: e.notes,
+        category: e.category,
+        imageUrl: e.image_url
+      }));
+
+      setWorkouts(prev => [{ ...wData, exercises: mappedExercises }, ...prev]);
+    } else {
+      setWorkouts(prev => [{ ...wData, exercises: [] }, ...prev]);
+    }
+  };
+
+  const addCompletedSession = async (sessionPayload: Omit<CompletedSession, 'id'>) => {
+    if (isDemo) {
+      const newSession: CompletedSession = {
+        ...sessionPayload,
+        id: Math.random().toString(36).substr(2, 9),
+      };
+      setCompletedSessions(prev => [newSession, ...prev]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('completed_sessions')
+      .insert({
+        user_id: user?.id,
+        workout_id: sessionPayload.workoutId || null,
+        workout_name: sessionPayload.workoutName,
+        date: sessionPayload.date,
+        completed_at: sessionPayload.completedAt,
+        duration_minutes: sessionPayload.durationMinutes,
+        exercises: sessionPayload.exercises,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const newSession: CompletedSession = {
+      id: data.id,
+      workoutId: data.workout_id,
+      workoutName: data.workout_name,
+      date: data.date,
+      completedAt: data.completed_at,
+      durationMinutes: data.duration_minutes,
+      exercises: data.exercises,
+    };
+
+    setCompletedSessions(prev => [newSession, ...prev]);
+  };
+
+  const [seenPRs, setSeenPRs] = useState<Record<string, number>>({});
+
+  const exercisesWithRecentPRs = React.useMemo(() => {
+    const prMap = new Map<string, { maxWeight: number; latestSessionDate: string; prSessionDate: string }>();
+
+    completedSessions.forEach(session => {
+      session.exercises.forEach(ex => {
+        const completedSets = ex.sets.filter(s => s.completed);
+        if (completedSets.length === 0) return;
+
+        const sessionMax = Math.max(...completedSets.map(s => parseFloat(s.weight) || 0));
+        const current = prMap.get(ex.name);
+
+        if (!current) {
+          prMap.set(ex.name, {
+            maxWeight: sessionMax,
+            latestSessionDate: session.date,
+            prSessionDate: session.date
+          });
+        } else {
+          if (session.date > current.latestSessionDate) {
+            current.latestSessionDate = session.date;
+          }
+          if (sessionMax > current.maxWeight) {
+            current.maxWeight = sessionMax;
+            current.prSessionDate = session.date;
+          } else if (sessionMax === current.maxWeight) {
+            if (session.date > current.prSessionDate) {
+              current.prSessionDate = session.date;
+            }
+          }
+        }
+      });
+    });
+
+    return Array.from(prMap.entries())
+      .filter(([name, data]) => {
+        if (data.maxWeight <= 0) return false;
+        const lastSeenWeight = seenPRs[name] || 0;
+        return data.maxWeight > lastSeenWeight;
+      })
+      .map(([name]) => name);
+  }, [completedSessions, seenPRs]);
+
+  const totalPRsCount = React.useMemo(() => {
+    let count = 0;
+    const records = new Map<string, number>();
+    
+    // Sort chronologically to count PR milestones
+    const sorted = [...completedSessions].sort((a, b) => a.date.localeCompare(b.date));
+    
+    sorted.forEach(session => {
+      session.exercises.forEach(ex => {
+        const completedSets = ex.sets.filter(s => s.completed);
+        if (completedSets.length === 0) return;
+        
+        const sessionMax = Math.max(...completedSets.map(s => parseFloat(s.weight) || 0));
+        const record = records.get(ex.name) || 0;
+        
+        if (sessionMax > record) {
+          count++;
+          records.set(ex.name, sessionMax);
+        }
+      });
+    });
+    return count;
+  }, [completedSessions]);
+
+  const markPRAsSeen = async (name: string) => {
+    // Find absolute max weight for this exercise to set the seen baseline
+    let currentMax = 0;
+    completedSessions.forEach(s => {
+      s.exercises.forEach(ex => {
+        if (ex.name === name) {
+          const cSets = ex.sets.filter(st => st.completed);
+          if (cSets.length > 0) {
+            const m = Math.max(...cSets.map(st => parseFloat(st.weight) || 0));
+            if (m > currentMax) currentMax = m;
+          }
+        }
+      });
+    });
+
+    const newSeenPRs = {
+      ...seenPRs,
+      [name]: currentMax
+    };
+    
+    setSeenPRs(newSeenPRs);
+    
+    // Persist to AsyncStorage if user is logged in
+    if (user?.id) {
+      try {
+        const key = `@seen_prs_${user.id}`;
+        await AsyncStorage.setItem(key, JSON.stringify(newSeenPRs));
+      } catch (e) {
+        console.error('Failed to save seen PRs:', e);
+      }
+    }
+  };
+
+  return (
+    <WorkoutContext.Provider value={{
+      workouts,
+      isLoading,
+      completedSessions,
+      exercisesWithRecentPRs,
+      totalPRsCount,
+      markPRAsSeen,
+      addWorkout,
+      deleteWorkout,
+      clearAllWorkouts,
+      addExercise,
+      deleteExercise,
+      updateExercise,
+      createWorkoutFromTemplate,
+      addCompletedSession,
+      refreshWorkouts: fetchWorkouts,
+    }}>
+      {children}
+    </WorkoutContext.Provider>
+  );
+}
+
+export function useWorkouts() {
+  const context = useContext(WorkoutContext);
+  if (context === undefined) {
+    throw new Error('useWorkouts must be used within a WorkoutProvider');
+  }
+  return context;
+}

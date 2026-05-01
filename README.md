@@ -1,50 +1,76 @@
-# Welcome to Gym-Planner-Mobile app 👋
+# LogLift 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## Get started
+A professional, high-performance gym tracking application built with **Expo** and **React Native**. Designed for serious athletes who demand a seamless, premium interface for planning and tracking their fitness journey.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## ✨ Features
 
-2. Start the app
+- **🚀 Real-time Tracking**: Log sets, reps, and weights with an intuitive, distraction-free interface.
+- **📋 Custom Templates**: Effortlessly create, save, and reuse your favorite workout routines for consistent training.
+- **📈 Progress Analytics**: Visualize your gains with beautiful, interactive charts and automatic KG/LB unit conversion.
+- **🎨 Premium UI/UX**: Experience fluid staggered animations and a sleek, modern dashboard powered by `react-native-reanimated`.
+- **📅 Stats & Consistency**: Monitor your weekly volume, completed sessions, and key metrics at a glance with the `StatsStrip` and `WeeklyCalendar`.
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## 🛠️ The Process
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+1.  **Plan**: Customize your training by building routines from scratch or using your saved templates.
+2.  **Execute**: Jump into an **Active Workout** session designed for maximum Focus and minimal friction.
+3.  **Track**: Log every set. Watch as the UI provides instant, satisfying feedback on your completion.
+4.  **Analyze**: Dive into the **Progress** tab to see your historical data transformed into actionable insights.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## 🖼️ UI/UX Showcase
 
-When you're ready, run:
+> [!TIP]
+> This section is reserved for your project screenshots. Replace the placeholders below with your actual UI captures!
+
+| Dashboard View | Templates View | Progress Analytics |
+| :--- | :--- | :--- |
+| ![Dashboard](./assets/images/dashboard_long.jpg) | ![Templates](./assets/images/templates_long.jpg) | ![Progress](./assets/images/progress_long.jpg) |
+
+---
+
+## 🚀 Getting Started
+
+### 1. Install dependencies
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Start the app
 
-## Learn more
+```bash
+npx expo start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+In the output, you'll find options to open the app in a:
+- [Development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## 💻 Tech Stack
 
-Join our community of developers creating universal apps.
+- **Framework**: [Expo](https://expo.dev) / [React Native](https://reactnative.dev)
+- **Navigation**: [Expo Router](https://docs.expo.dev/router/introduction) (File-based)
+- **Animations**: [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/)
+- **UI Components**: Custom high-fidelity components (StatsStrip, WeeklyCalendar, WorkoutCard)
+- **Persistence**: Context-based state management
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 🤝 Community & Support
+
+Join the community of developers creating universal apps with Expo.
+
+- [Expo documentation](https://docs.expo.dev/)
+- [Expo on GitHub](https://github.com/expo/expo)
+- [Discord community](https://chat.expo.dev)

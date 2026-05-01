@@ -1,16 +1,32 @@
+import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { isSameWeek, parseISO, startOfDay, subDays } from 'date-fns';
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { FontAwesome5, Feather } from '@expo/vector-icons';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { useSettings } from '../contexts/SettingsContext';
 
 export interface Workout {
   id: string;
+  name: string;
   date: string;
   exercises: any[];
 }
 export interface CompletedSession {
   id: string;
+  workoutId: string;
+  workoutName: string;
   date: string;
-  exercises: any[];
+  completedAt: string;
+  durationMinutes: number;
+  exercises: {
+    id: string;
+    name: string;
+    category?: string;
+    sets: {
+      weight: string;
+      actualReps: number;
+      completed: boolean;
+    }[];
+  }[];
 }
 
 interface StatsStripProps {
@@ -46,14 +62,115 @@ function StatCard({ icon, label, value, sub, colorBg }: StatCardProps) {
 }
 
 export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
+  const { weightUnit, convertToDisplay } = useSettings();
   const stats = useMemo(() => {
-    return {
-      workoutsThisWeek: 3,
-      volume: "12.5t",
-      streak: 4,
-      topMuscle: "Chest",
+    const now = new Date();
+
+    // Helper to parse date strings safely in local time
+    const parseLocalOrISO = (dateStr: string) => {
+      if (!dateStr) return new Date(0);
+      if (dateStr.includes('T')) return parseISO(dateStr);
+      const [y, m, d] = dateStr.split('-').map(Number);
+      return new Date(y, m - 1, d);
     };
-  }, [workouts, sessions]);
+
+    // 1. Workouts This Week
+    const sessionsThisWeek = sessions.filter(s =>
+      isSameWeek(parseLocalOrISO(s.completedAt), now, { weekStartsOn: 1 })
+    );
+    const workoutsThisWeek = sessionsThisWeek.length;
+
+    // Total planned for this week
+    const plannedThisWeek = workouts.filter(w => {
+      const wDate = parseLocalOrISO(w.date);
+      return isSameWeek(wDate, now, { weekStartsOn: 1 });
+    }).length;
+
+    // 2. Weekly Volume
+    let totalVolume = 0;
+    sessionsThisWeek.forEach(s => {
+      s.exercises.forEach(ex => {
+        ex.sets.forEach(set => {
+          if (set.completed) {
+            totalVolume += (parseFloat(set.weight) || 0) * (set.actualReps || 0);
+          }
+        });
+      });
+    });
+
+    const formatVolume = (v: number) => {
+      const displayVolume = convertToDisplay(v);
+      if (displayVolume >= 1000) {
+        return `${(displayVolume / 1000).toFixed(1)} ${weightUnit === 'kg' ? 't' : 'klb'}`;
+      }
+      return `${Math.round(displayVolume)} ${weightUnit}`;
+    };
+
+    // 3. Streak (Daily based, converts to weeks at 7)
+    const sessionDates = new Set(sessions.map(s => {
+      const d = parseLocalOrISO(s.completedAt);
+      return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    }));
+
+    let streakDays = 0;
+    let curr = startOfDay(now);
+
+    // Check if streak is alive (session today or yesterday)
+    const hasToday = sessionDates.has(`${curr.getFullYear()}-${curr.getMonth() + 1}-${curr.getDate()}`);
+    const yesterday = subDays(curr, 1);
+    const hasYesterday = sessionDates.has(`${yesterday.getFullYear()}-${yesterday.getMonth() + 1}-${yesterday.getDate()}`);
+
+    if (hasToday || hasYesterday) {
+      let checkDate = hasToday ? curr : yesterday;
+      while (true) {
+        const dateKey = `${checkDate.getFullYear()}-${checkDate.getMonth() + 1}-${checkDate.getDate()}`;
+        if (sessionDates.has(dateKey)) {
+          streakDays++;
+          checkDate = subDays(checkDate, 1);
+        } else {
+          break;
+        }
+      }
+    }
+
+    const formatStreak = (days: number) => {
+      if (days === 0) return "0";
+      if (days === 1) return "1 day";
+      if (days >= 7) {
+        const wks = Math.floor(days / 7);
+        const rem = days % 7;
+        if (rem === 0) return `${wks} wks`;
+        return `${wks} wks ${rem} d`;
+      }
+      return `${days} days`;
+    };
+
+    // 4. Top Muscle
+    const categoryCounts: Record<string, number> = {};
+    sessionsThisWeek.forEach(s => {
+      s.exercises.forEach(ex => {
+        if (ex.category) {
+          categoryCounts[ex.category] = (categoryCounts[ex.category] || 0) + ex.sets.filter(st => st.completed).length;
+        }
+      });
+    });
+
+    let topMuscle = "None";
+    let maxSets = 0;
+    Object.entries(categoryCounts).forEach(([cat, count]) => {
+      if (count > maxSets) {
+        maxSets = count;
+        topMuscle = cat;
+      }
+    });
+
+    return {
+      workoutsThisWeek: `${plannedThisWeek}`,
+      volume: formatVolume(totalVolume),
+      streak: formatStreak(streakDays),
+      topMuscle: topMuscle.length > 8 ? topMuscle.substring(0, 8) + '...' : topMuscle,
+    };
+  }, [workouts, sessions, weightUnit, convertToDisplay]);
 
   return (
     <View style={styles.container}>
@@ -74,7 +191,7 @@ export function StatsStrip({ workouts = [], sessions = [] }: StatsStripProps) {
       <StatCard
         icon={<FontAwesome5 name="fire" size={14} color="#f97316" />}
         label="Streak"
-        value={`${stats.streak} wks`}
+        value={stats.streak}
         sub="consecutive"
         colorBg="#fff7ed"
       />

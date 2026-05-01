@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 
 type CustomUser = {
@@ -12,6 +13,7 @@ type AuthContextType = {
   session: Session | null;
   user: CustomUser | null;
   logout: () => Promise<void>;
+  loginAsDemo: () => Promise<void>;
   isInitialized: boolean;
 };
 
@@ -45,8 +47,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(mapUser(session?.user ?? null));
     });
 
+    // Handle deep links for authentication (e.g., password reset)
+    const handleDeepLink = async (url: string | null) => {
+      if (!url) return;
+      
+      // Supabase tokens are often in the fragment (#...)
+      const fragment = url.split('#')[1];
+      if (fragment) {
+        const params = new URLSearchParams(fragment);
+        const access_token = params.get('access_token');
+        const refresh_token = params.get('refresh_token');
+
+        if (access_token && refresh_token) {
+          await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+        }
+      }
+    };
+
+    Linking.getInitialURL().then(handleDeepLink);
+    const linkingSubscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
     return () => {
       subscription.unsubscribe();
+      linkingSubscription.remove();
     };
   }, []);
 
@@ -54,8 +82,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const loginAsDemo = async () => {
+    // Generate a mock session for the demo user
+    const demoUser = {
+      id: 'demo-user-id',
+      email: 'demo@example.com',
+      name: 'Demo User',
+    };
+    
+    // Create a minimal fake session
+    const mockSession = {
+      access_token: 'mock-token',
+      refresh_token: 'mock-refresh-token',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: {
+        id: demoUser.id,
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: demoUser.email,
+        app_metadata: {},
+        user_metadata: { name: demoUser.name },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    } as Session;
+
+    setSession(mockSession);
+    setUser(demoUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, logout, isInitialized }}>
+    <AuthContext.Provider value={{ session, user, logout, loginAsDemo, isInitialized }}>
       {children}
     </AuthContext.Provider>
   );

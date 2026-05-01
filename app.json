@@ -1,25 +1,28 @@
 {
   "expo": {
-    "name": "gym-planner-mobile",
-    "slug": "gym-planner-mobile",
-    "version": "1.0.0",
+    "name": "LogLift",
+    "slug": "log-lift-mobile",
+    "version": "1.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "gymplannermobile",
+    "scheme": "loglift",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.cybershan.loglift",
+      "versionCode": 4,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0a0a0a",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "output": "static",
@@ -38,11 +41,18 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cf4ddd81-2a1a-4175-8845-89ec91fd22dc"
+      }
     }
   }
 }

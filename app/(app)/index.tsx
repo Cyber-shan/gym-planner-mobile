@@ -1,48 +1,83 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown, FadeInLeft, FadeInUp } from 'react-native-reanimated';
+import { AddWorkoutDialog } from '../../components/AddWorkoutDialog';
 import { StatsStrip } from '../../components/StatsStrip';
 import { WeeklyCalendar } from '../../components/WeeklyCalendar';
-import { AddWorkoutDialog } from '../../components/AddWorkoutDialog';
-import { WorkoutCard, Workout } from '../../components/WorkoutCard';
+import { WorkoutCard } from '../../components/WorkoutCard';
+import { useTemplates } from '../../contexts/TemplateContext';
+import { useWorkouts } from '../../contexts/WorkoutContext';
 
 export default function DashboardPage() {
   const router = useRouter();
-  
-  // Dummy data mimicking the missing WorkoutContext
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [completedSessions, setCompletedSessions] = useState<any[]>([]);
+  const isFocused = useIsFocused();
+
+  const {
+    workouts,
+    isLoading,
+    addWorkout,
+    deleteWorkout,
+    addExercise,
+    deleteExercise,
+    updateExercise,
+    completedSessions
+  } = useWorkouts();
+
+  const { addTemplate } = useTemplates();
+
   const [isWorkoutDialogOpen, setIsWorkoutDialogOpen] = useState(false);
 
-  const handleAddWorkout = (name: string, date: string) => {
-    setWorkouts([...workouts, { id: Math.random().toString(), date, name, exercises: [] }]);
+  const handleAddWorkout = async (name: string, date: string) => {
+    try {
+      await addWorkout(name, date);
+    } catch (e: any) {
+      Alert.alert("Error", "Failed to create workout: " + e.message);
+    }
   };
 
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#030213" />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      
+    <ScrollView
+      key={isFocused ? 'focused' : 'not-focused'}
+      style={styles.container}
+      contentContainerStyle={styles.content}
+    >
+
       {/* Stats Strip */}
-      <StatsStrip workouts={workouts} sessions={completedSessions} />
+      <Animated.View entering={FadeInDown.delay(0).duration(500).springify()}>
+        <StatsStrip workouts={workouts} sessions={completedSessions} />
+      </Animated.View>
 
       {/* Calendar */}
-      <WeeklyCalendar workouts={workouts} sessions={completedSessions} />
+      <Animated.View entering={FadeInDown.delay(100).duration(500).springify()}>
+        <WeeklyCalendar workouts={workouts} sessions={completedSessions} />
+      </Animated.View>
 
       {/* Main Layout Area */}
       <View style={styles.mainArea}>
-        
+
         {/* Workouts Header */}
-        <View style={styles.sectionHeader}>
+        <Animated.View entering={FadeInLeft.delay(200).duration(500).springify()} style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Workouts</Text>
           <TouchableOpacity style={styles.addButton} onPress={() => setIsWorkoutDialogOpen(true)}>
             <Feather name="plus" size={16} color="white" style={styles.addIcon} />
             <Text style={styles.addButtonText}>New Workout</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* Empty State / List */}
         {workouts.length === 0 ? (
-          <View style={styles.emptyState}>
+          <Animated.View entering={FadeInUp.delay(300).duration(500).springify()} style={styles.emptyState}>
             <View style={styles.emptyIconContainer}>
               <FontAwesome5 name="dumbbell" size={48} color="#9ca3af" />
             </View>
@@ -50,45 +85,33 @@ export default function DashboardPage() {
             <Text style={styles.emptySubtitle}>
               Start building your training routine by creating your first workout plan
             </Text>
-            <TouchableOpacity style={styles.createFirstButton} onPress={() => setIsWorkoutDialogOpen(true)}>
-              <Feather name="plus" size={20} color="white" style={styles.addIcon} />
-              <Text style={styles.createFirstButtonText}>Create Your First Workout</Text>
-            </TouchableOpacity>
-          </View>
+
+          </Animated.View>
         ) : (
           <View>
-             {workouts.map(w => (
+            {workouts.map((w, i) => (
+              <Animated.View
+                key={w.id}
+                entering={FadeInUp.delay(i * 100 + 300).duration(500).springify()}
+              >
                 <WorkoutCard
-                  key={w.id}
                   workout={w}
-                  onDelete={id => setWorkouts(prev => prev.filter(wk => wk.id !== id))}
-                  onAddExercise={id => {
-                     // dummy add exercise logic
-                     setWorkouts(prev => prev.map(wk => {
-                        if (wk.id === id) {
-                          return { ...wk, exercises: [...wk.exercises, { id: Math.random().toString(), name: "Lat Pulldown", sets: 3, reps: 10, category: "Back" }] };
-                        }
-                        return wk;
-                     }));
+                  onDelete={deleteWorkout}
+                  onAddExercise={addExercise}
+                  onDeleteExercise={deleteExercise}
+                  onEditExercise={updateExercise}
+                  onStartWorkout={(wId) => router.push({ pathname: '/(app)/active-workout/[workoutId]', params: { workoutId: wId } })}
+                  onSaveAsTemplate={async (name, exercises) => {
+                    try {
+                      await addTemplate(name, exercises);
+                      Alert.alert("Success", `Template "${name}" saved!`);
+                    } catch (e: any) {
+                      Alert.alert("Error", "Failed to save template: " + e.message);
+                    }
                   }}
-                  onDeleteExercise={(wId, eId) => {
-                     setWorkouts(prev => prev.map(wk => {
-                        if (wk.id === wId) return { ...wk, exercises: wk.exercises.filter(e => e.id !== eId) };
-                        return wk;
-                     }));
-                  }}
-                  onEditExercise={(wId, eId, updated) => {
-                     setWorkouts(prev => prev.map(wk => {
-                        if (wk.id === wId) {
-                           return { ...wk, exercises: wk.exercises.map(e => e.id === eId ? { ...e, ...updated } : e) };
-                        }
-                        return wk;
-                     }));
-                  }}
-                  onStartWorkout={(wId) => alert(`Starting workout ${wId}`)}
-                  onSaveAsTemplate={(name, exercises) => alert(`Saved template ${name} with ${exercises.length} exercises!`)}
                 />
-             ))}
+              </Animated.View>
+            ))}
           </View>
         )}
       </View>
@@ -98,7 +121,7 @@ export default function DashboardPage() {
         onOpenChange={setIsWorkoutDialogOpen}
         onAdd={handleAddWorkout}
       />
-      
+
     </ScrollView>
   );
 }

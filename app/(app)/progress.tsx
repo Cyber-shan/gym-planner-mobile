@@ -1,38 +1,31 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { FontAwesome5, Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
+import React, { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown, FadeInLeft, FadeInUp } from 'react-native-reanimated';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useWorkouts } from '../../contexts/WorkoutContext';
+import { exerciseDatabase } from '../../data/exerciseDatabase';
+import { getCategoryColor } from '../../lib/colors';
 
 // ─── Native Date Helpers (replacing date-fns) ───────────────
 const parseISO = (dateStr: string) => new Date(dateStr);
 const formatShort = (d: Date) => {
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${months[d.getMonth()]} ${d.getDate()}`;
 };
 const formatLong = (d: Date) => {
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 };
 // ─────────────────────────────────────────────────────────────
 
 export default function ProgressPage() {
-  // Stub missing workout context data
-  const completedSessions: any[] = [
-    // Pre-populating a few dummy rows so you can see the native layout!
-    {
-      id: "1", date: new Date(Date.now() - 86400000 * 5).toISOString(), workoutName: "Chest & Back",
-      exercises: [
-        { name: "Bench Press", sets: [{ completed: true, weight: "75", actualReps: 10 }] },
-        { name: "Squat", sets: [{ completed: true, weight: "100", actualReps: 5 }] }
-      ]
-    },
-    {
-      id: "2", date: new Date().toISOString(), workoutName: "Upper Body Power",
-      exercises: [
-        { name: "Bench Press", sets: [{ completed: true, weight: "80", actualReps: 8 }, { completed: true, weight: "85", actualReps: 6 }] },
-        { name: "Squat", sets: [{ completed: true, weight: "115", actualReps: 5 }] }
-      ]
-    }
-  ];
+  const isFocused = useIsFocused();
+  const { completedSessions, isLoading, exercisesWithRecentPRs, markPRAsSeen } = useWorkouts();
+  const { weightUnit, convertToDisplay } = useSettings();
+  const { user } = useAuth();
 
   // Collect all unique exercise names
   const exerciseNames = useMemo(() => {
@@ -42,6 +35,21 @@ export default function ProgressPage() {
   }, [completedSessions]);
 
   const [selectedExercise, setSelectedExercise] = useState<string>(exerciseNames[0] || "");
+  const [activeBar, setActiveBar] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredExerciseNames = useMemo(() => {
+    if (!searchQuery) return exerciseNames;
+    return exerciseNames.filter(name =>
+      name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [exerciseNames, searchQuery]);
+
+  const selectedExerciseCategory = useMemo(() => {
+    return exerciseDatabase.find(e => e.name === selectedExercise)?.category;
+  }, [selectedExercise]);
+
+  const categoryTheme = getCategoryColor(selectedExerciseCategory);
 
   const chartData = useMemo(() => {
     if (!selectedExercise) return [];
@@ -55,11 +63,12 @@ export default function ProgressPage() {
       if (completedSets.length === 0) return;
 
       const maxW = Math.max(...completedSets.map((s: any) => Number(s.weight) || 0));
+      const displayMaxW = convertToDisplay(maxW);
       const totalReps = completedSets.reduce((sum: number, s: any) => sum + s.actualReps, 0);
 
-      if (!byDate[session.date] || maxW > byDate[session.date].maxWeight) {
+      if (!byDate[session.date] || displayMaxW > byDate[session.date].maxWeight) {
         byDate[session.date] = {
-          maxWeight: maxW,
+          maxWeight: displayMaxW,
           totalReps,
           sets: completedSets.length,
           sessionName: session.workoutName,
@@ -73,16 +82,35 @@ export default function ProgressPage() {
         id: `${date}-${index}`,
         date: formatShort(parseISO(date)),
         fullDate: date,
-        weight: parseFloat(data.maxWeight.toFixed(1)),
+        weight: data.maxWeight,
         reps: data.totalReps,
         sets: data.sets,
         label: data.sessionName,
       }));
-  }, [completedSessions, selectedExercise]);
+  }, [completedSessions, selectedExercise, weightUnit, convertToDisplay]);
 
   const prValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.weight)) : 0;
   const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].weight : 0;
-  const isPR = latestValue > 0 && latestValue === prValue && chartData.length > 1;
+
+  // Find all-time PB across all data
+  const allTimePB = useMemo(() => {
+    let max = 0;
+    completedSessions.forEach(session => {
+      const ex = session.exercises.find(e => e.name === selectedExercise);
+      if (ex) {
+        ex.sets.forEach(s => {
+          if (s.completed) {
+            const w = parseFloat(s.weight) || 0;
+            const dw = convertToDisplay(w);
+            if (dw > max) max = dw;
+          }
+        });
+      }
+    });
+    return max;
+  }, [completedSessions, selectedExercise, weightUnit, convertToDisplay]);
+
+  const isPR = latestValue > 0 && latestValue >= allTimePB && chartData.length > 1;
 
   const sessionHistory = useMemo(() => {
     if (!selectedExercise) return [];
@@ -92,131 +120,242 @@ export default function ProgressPage() {
       .map(session => {
         const exercise = session.exercises.find((e: any) => e.name === selectedExercise)!;
         const completedSets = exercise.sets.filter((s: any) => s.completed);
-        const maxW = completedSets.length > 0
-          ? Math.max(...completedSets.map((s: any) => Number(s.weight) || 0))
-          : 0;
+        const bestSet = [...completedSets].sort((a, b) => {
+          const wA = Number(a.weight) || 0;
+          const wB = Number(b.weight) || 0;
+          if (wB !== wA) return wB - wA;
+          return b.actualReps - a.actualReps;
+        })[0];
+
+        const maxW = bestSet ? (Number(bestSet.weight) || 0) : 0;
+        const bestReps = bestSet ? bestSet.actualReps : 0;
+
         return {
           id: session.id,
           date: session.date,
           workoutName: session.workoutName,
-          sets: completedSets.length,
-          maxWeight: maxW,
-          totalReps: completedSets.reduce((sum: number, s: any) => sum + s.actualReps, 0),
+          maxWeight: convertToDisplay(maxW),
+          bestReps: bestReps,
         };
       })
       .reverse();
-  }, [completedSessions, selectedExercise]);
+  }, [completedSessions, selectedExercise, weightUnit, convertToDisplay]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
+    <ScrollView
+      key={isFocused ? 'focused' : 'not-focused'}
+      style={styles.container}
+      contentContainerStyle={styles.content}
+    >
+      <Animated.View entering={FadeInDown.delay(0).duration(500).springify()} style={styles.header}>
         <Text style={styles.headerTitle}>Progress Tracker</Text>
-      </View>
+      </Animated.View>
 
-      {exerciseNames.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconContainer}>
-            <Feather name="trending-up" size={48} color="#9ca3af" />
-          </View>
-          <Text style={styles.emptyTitle}>No data yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Complete your first workout using Active Workout Mode to start tracking progress.
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.contentWrap}>
-          
-          {/* Exercise Selector (Horizontal Chips replacing the Web Dropdown) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsContainer}>
-            {exerciseNames.map((name, i) => (
-              <TouchableOpacity 
-                key={`exercise-${i}-${name}`} 
-                style={[styles.chip, selectedExercise === name && styles.chipActive]}
-                onPress={() => setSelectedExercise(name)}
-              >
-                <Text style={[styles.chipText, selectedExercise === name && styles.chipTextActive]}>{name}</Text>
+      <View style={styles.contentWrap}>
+        {/* Search and Exercise Selector */}
+        <Animated.View entering={FadeInUp.delay(100).duration(500).springify()} style={styles.selectorWrapper}>
+          <View style={styles.searchContainer}>
+            <Feather name="search" size={16} color="#9ca3af" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search exercises..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#9ca3af"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <Feather name="x-circle" size={16} color="#9ca3af" />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* PR Bar */}
-          <View style={styles.prHeader}>
-            {isPR && (
-              <View style={styles.prBadge}>
-                <FontAwesome5 name="trophy" size={10} color="#ffffff" style={{marginRight: 4}} />
-                <Text style={styles.prBadgeText}>New PR!</Text>
-              </View>
-            )}
-            {prValue > 0 && (
-              <Text style={styles.bestText}>
-                Personal best: <Text style={styles.bestValue}>{prValue} kg</Text>
-              </Text>
             )}
           </View>
 
-          {/* Pure React Native Flexbox Bar Chart 
-              Since Recharts (Web DOM SVG) crashes React Native, this beautifully mimics the visual using flex! */}
-          {chartData.length > 0 ? (
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>Max weight per session (kg)</Text>
-              <View style={styles.barChartContainer}>
-                {chartData.map((d) => {
-                  // Normalize height percentage
-                  const heightPercent = prValue > 0 ? (d.weight / prValue) * 100 : 0;
-                  const isPrBar = d.weight === prValue;
-                  return (
-                     <View key={d.id} style={styles.barColumn}>
-                       <Text style={styles.barValue} adjustsFontSizeToFit numberOfLines={1}>{d.weight}</Text>
-                       <View style={[
-                         styles.bar, 
-                         { height: `${heightPercent}%`, backgroundColor: isPrBar ? '#f59e0b' : '#2563eb' }
-                       ]} />
-                       <Text style={styles.barLabel} adjustsFontSizeToFit numberOfLines={1}>{d.date}</Text>
-                     </View>
-                  );
-                })}
-              </View>
-            </View>
-          ) : (
-            <View style={styles.noChartData}>
-              <Text style={styles.noChartText}>No weight data for this exercise yet.</Text>
-            </View>
-          )}
-
-          {/* Session History */}
-          {sessionHistory.length > 0 && (
-            <View style={styles.historyCard}>
-              <View style={styles.historyHeader}>
-                <Feather name="calendar" size={16} color="#0a0a0a" style={{marginRight: 8}} />
-                <Text style={styles.historyHeaderTitle}>Session History</Text>
-              </View>
-              <View>
-                {sessionHistory.map((s, index) => (
-                  <View 
-                    key={s.id} 
+          {exerciseNames.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsContainer}>
+              {filteredExerciseNames.length > 0 ? (
+                filteredExerciseNames.map((name, i) => (
+                  <TouchableOpacity
+                    key={`exercise-${i}-${name}`}
                     style={[
-                      styles.historyRow, 
-                      index === sessionHistory.length - 1 && { borderBottomWidth: 0 }
+                      styles.chip,
+                      selectedExercise === name && styles.chipActive,
+                      exercisesWithRecentPRs.includes(name) && styles.chipPR
                     ]}
+                    onPress={() => {
+                      setSelectedExercise(name);
+                      markPRAsSeen(name);
+                    }}
                   >
-                    <View style={styles.historyRowLeft}>
-                      <Text style={styles.historyWorkoutName}>{s.workoutName}</Text>
-                      <Text style={styles.historyDate}>{formatLong(parseISO(s.date))}</Text>
-                    </View>
-                    <View style={styles.historyRowRight}>
-                      {s.maxWeight > 0 && (
-                        <Text style={styles.historyMaxWeight}>{s.maxWeight} kg</Text>
+                    <View style={styles.chipContent}>
+                      <Text style={[
+                        styles.chipText,
+                        selectedExercise === name && styles.chipTextActive,
+                        exercisesWithRecentPRs.includes(name) && styles.chipTextPR
+                      ]}>{name}</Text>
+                      {exercisesWithRecentPRs.includes(name) && (
+                        <FontAwesome5
+                          name="trophy"
+                          size={10}
+                          color="#854d0e"
+                          style={{ marginLeft: 6 }}
+                        />
                       )}
-                      <Text style={styles.historySetsReps}>{s.sets} sets · {s.totalReps} reps</Text>
                     </View>
-                  </View>
-                ))}
-              </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noResultsText}>No exercises found</Text>
+              )}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyStateInline}>
+              <Feather name="trending-up" size={24} color="#9ca3af" style={{ marginRight: 12 }} />
+              <Text style={styles.emptyTitleInline}>No data yet. Start a workout to track progress.</Text>
             </View>
           )}
+        </Animated.View>
 
-        </View>
-      )}
+        {/* PR Bar (Hidden if no PR, but structure is there) */}
+        <Animated.View entering={FadeInLeft.delay(200).duration(500).springify()} style={styles.prHeader}>
+          {isPR && (
+            <View style={styles.prBadge}>
+              <FontAwesome5 name="trophy" size={10} color="#ffffff" style={{ marginRight: 6 }} />
+              <Text style={styles.prBadgeText}>{selectedExercise} PR!</Text>
+            </View>
+          )}
+          {prValue > 0 && (
+            <Text style={styles.bestText}>
+              Personal best: <Text style={styles.bestValue}>{prValue} {weightUnit}</Text>
+            </Text>
+          )}
+        </Animated.View>
+
+        {/* Enhanced Flexbox Bar Chart Card (Always Persistent) */}
+        <Animated.View entering={FadeInUp.delay(300).duration(600).springify()} style={styles.chartCard}>
+          <View style={styles.chartHeaderRow}>
+            <Text style={styles.chartTitle}>Max weight per session ({weightUnit})</Text>
+            {activeBar && (
+              <View style={styles.activeBarInfo}>
+                <Text style={styles.activeBarText}>
+                  {chartData.find(d => d.id === activeBar)?.weight}{weightUnit} · {chartData.find(d => d.id === activeBar)?.date}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.chartContainerOuter}>
+            {/* Y-Axis scale */}
+            <View style={styles.yAxis}>
+              <Text style={styles.yAxisText}>{allTimePB > 0 ? allTimePB : '--'}{weightUnit}</Text>
+              <View style={styles.yAxisLine} />
+              <Text style={styles.yAxisText}>{allTimePB > 0 ? Math.round(allTimePB / 2) : '--'}{weightUnit}</Text>
+              <View style={styles.yAxisLine} />
+              <Text style={styles.yAxisText}>0</Text>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.barChartScrollContent}
+              scrollEnabled={chartData.length > 0}
+            >
+              <View style={[styles.barChartContainer, chartData.length === 0 && styles.barChartContainerEmpty]}>
+                {chartData.length > 0 ? (
+                  <>
+                    {/* PB Line */}
+                    <View style={[styles.pbIndicatorLine, { bottom: 24 + 156 - 1 }]} />
+
+                    {chartData.map((d) => {
+                      const heightPercent = allTimePB > 0 ? (d.weight / allTimePB) * 100 : 0;
+                      const isPrBar = d.weight === allTimePB;
+                      const isActive = activeBar === d.id;
+
+                      return (
+                        <Pressable
+                          key={d.id}
+                          style={styles.barColumn}
+                          onPressIn={() => setActiveBar(d.id)}
+                          onPressOut={() => setActiveBar(null)}
+                        >
+                          <View style={styles.barWrapper}>
+                            <View style={[
+                              styles.bar,
+                              {
+                                height: `${heightPercent}%`,
+                                backgroundColor: isPrBar ? '#eab308' : categoryTheme.bg,
+                                opacity: activeBar && !isActive ? 0.4 : 1,
+                                borderTopLeftRadius: 6,
+                                borderTopRightRadius: 6,
+                              }
+                            ]} />
+                          </View>
+                          <View style={styles.barLabelContainer}>
+                            <Text style={styles.barLabel} numberOfLines={1}>{d.date}</Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <View style={styles.noChartDataPlaceholder}>
+                    <Text style={styles.noChartTextPlaceholder}>No session data available</Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+
+          <View style={styles.chartFooter}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: '#eab308' }]} />
+              <Text style={styles.legendText}>Personal Best</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: categoryTheme.bg || '#e5e7eb' }]} />
+              <Text style={styles.legendText}>Session Max</Text>
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Session History */}
+        {sessionHistory.length > 0 && (
+          <Animated.View entering={FadeInUp.delay(500).duration(600).springify()} style={styles.historyCard}>
+            <View style={styles.historyHeader}>
+              <Feather name="calendar" size={16} color="#0a0a0a" style={{ marginRight: 8 }} />
+              <Text style={styles.historyHeaderTitle}>Session History</Text>
+            </View>
+            <View>
+              {sessionHistory.map((s, index) => (
+                <View
+                  key={s.id}
+                  style={[
+                    styles.historyRow,
+                    index === sessionHistory.length - 1 && { borderBottomWidth: 0 }
+                  ]}
+                >
+                  <View style={styles.historyRowLeft}>
+                    <Text style={styles.historyWorkoutName}>{s.workoutName}</Text>
+                    <Text style={styles.historyDate}>{formatLong(parseISO(s.date))}</Text>
+                  </View>
+                  <View style={styles.historyRowRight}>
+                    {s.maxWeight > 0 && (
+                      <View style={styles.maxWeightContainer}>
+                        <Text style={styles.historyMaxWeight}>
+                          {s.maxWeight} {weightUnit}
+                        </Text>
+                        {allTimePB > 0 && s.maxWeight === allTimePB && (
+                          <FontAwesome5 name="trophy" size={10} color="#eab308" style={{ marginLeft: 4 }} />
+                        )}
+                      </View>
+                    )}
+                    <Text style={styles.historySetsReps}>{selectedExercise}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -234,20 +373,37 @@ const styles = StyleSheet.create({
   chipsContainer: { flexDirection: 'row', marginBottom: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#ffffff', borderRadius: 20, borderWidth: 1, borderColor: '#e5e7eb', marginRight: 8 },
   chipActive: { backgroundColor: '#030213', borderColor: '#030213' },
+  chipPR: { backgroundColor: '#fde047', borderColor: '#facc15' },
+  chipContent: { flexDirection: 'row', alignItems: 'center' },
   chipText: { fontSize: 14, color: '#717182', fontWeight: '500' },
   chipTextActive: { color: '#ffffff' },
+  chipTextPR: { color: '#854d0e', fontWeight: '700' },
   prHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
   prBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#eab308', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   prBadgeText: { fontSize: 12, color: '#ffffff', fontWeight: '600' },
   bestText: { fontSize: 14, color: '#717182' },
   bestValue: { fontWeight: '600', color: '#0a0a0a' },
   chartCard: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 16, paddingTop: 20 },
-  chartTitle: { fontSize: 14, color: '#717182', marginBottom: 24 },
-  barChartContainer: { height: 180, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' },
-  barColumn: { alignItems: 'center', width: '15%', height: '100%', justifyContent: 'flex-end' },
-  barValue: { fontSize: 10, color: '#0a0a0a', fontWeight: '600', marginBottom: 4 },
-  bar: { width: '100%', maxWidth: 32, borderRadius: 4, minHeight: 4, flexShrink: 0 },
-  barLabel: { fontSize: 10, color: '#717182', marginTop: 8 },
+  chartHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  chartTitle: { fontSize: 14, color: '#717182' },
+  activeBarInfo: { backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  activeBarText: { fontSize: 12, fontWeight: '600', color: '#030213' },
+  chartContainerOuter: { flexDirection: 'row', height: 220 },
+  yAxis: { width: 40, height: 180, justifyContent: 'space-between', alignItems: 'flex-end', paddingRight: 8 },
+  yAxisText: { fontSize: 10, color: '#9ca3af', fontWeight: '500' },
+  yAxisLine: { height: 1, backgroundColor: '#f3f4f6', width: 4 },
+  barChartScrollContent: { paddingRight: 16 },
+  barChartContainer: { height: 180, flexDirection: 'row', alignItems: 'flex-end', position: 'relative', minWidth: '100%' },
+  pbIndicatorLine: { position: 'absolute', left: 0, right: 0, height: 1, borderStyle: 'dashed', borderWidth: 1, borderColor: '#eab308', zIndex: 1, opacity: 0.5 },
+  barColumn: { alignItems: 'center', width: 60, height: 180, justifyContent: 'flex-end' },
+  barWrapper: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'flex-end' },
+  bar: { width: 32, minHeight: 4, flexShrink: 0 },
+  barLabelContainer: { height: 24, justifyContent: 'center', alignItems: 'center' },
+  barLabel: { fontSize: 10, color: '#717182' },
+  chartFooter: { flexDirection: 'row', gap: 16, marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendColor: { width: 10, height: 10, borderRadius: 2 },
+  legendText: { fontSize: 12, color: '#717182' },
   noChartData: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 32, alignItems: 'center' },
   noChartText: { color: '#717182', fontSize: 14 },
   historyCard: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, overflow: 'hidden' },
@@ -259,5 +415,16 @@ const styles = StyleSheet.create({
   historyDate: { fontSize: 12, color: '#717182' },
   historyRowRight: { alignItems: 'flex-end' },
   historyMaxWeight: { fontSize: 14, fontWeight: '600', color: '#0a0a0a', marginBottom: 2 },
-  historySetsReps: { fontSize: 12, color: '#717182' }
+  maxWeightContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
+  historySetsReps: { fontSize: 12, color: '#717182' },
+  selectorWrapper: { marginBottom: 8 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, paddingHorizontal: 12, height: 40, marginBottom: 12 },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 14, color: '#0a0a0a', paddingVertical: 8 },
+  noResultsText: { fontSize: 12, color: '#9ca3af', fontStyle: 'italic', marginLeft: 8, marginTop: 8 },
+  emptyStateInline: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fefce8', borderWidth: 1, borderColor: '#fef08a', padding: 12, borderRadius: 10, marginBottom: 8 },
+  emptyTitleInline: { fontSize: 13, color: '#854d0e', fontWeight: '500', flex: 1 },
+  barChartContainerEmpty: { justifyContent: 'center', alignItems: 'center' },
+  noChartDataPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', minWidth: 200 },
+  noChartTextPlaceholder: { fontSize: 12, color: '#9ca3af', fontStyle: 'italic' }
 });

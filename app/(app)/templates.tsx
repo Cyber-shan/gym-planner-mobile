@@ -1,44 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, TextInput, Alert, Dimensions } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInLeft, FadeInRight, FadeInUp } from 'react-native-reanimated';
+import { DatePicker } from '../../components/ui/DatePicker';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useTemplates } from '../../contexts/TemplateContext';
+import { useWorkouts } from '../../contexts/WorkoutContext';
+import { getCategoryColor } from '../../lib/colors';
 
-// ─── Stubbed Context types and data ─────────────────────────────────────
-const PREBUILT_IDS = ["seed-t-1", "seed-t-2", "seed-t-3"];
-
+// ─── Types ─────────────────────────────────────────────────────────────
 export type WorkoutTemplate = {
   id: string;
   name: string;
-  exercises: { name: string; sets: number; reps: number; category?: string; imageUrl?: string }[];
+  exercises: { name: string; sets: number; reps: number; category?: string; imageUrl?: string; weight?: string }[];
 };
-
-const DUMMY_TEMPLATES: WorkoutTemplate[] = [
-  {
-    id: "seed-t-1",
-    name: "Full Body Beginner",
-    exercises: [
-      { name: "Squats", sets: 3, reps: 10, category: "Legs" },
-      { name: "Push-ups", sets: 3, reps: 10, category: "Chest" }
-    ]
-  },
-  {
-    id: "seed-t-2",
-    name: "Upper Body Power",
-    exercises: [
-      { name: "Bench Press", sets: 5, reps: 5, category: "Chest" },
-      { name: "Barbell Row", sets: 4, reps: 8, category: "Back" }
-    ]
-  },
-  {
-    id: "user-t-1",
-    name: "My Custom Split",
-    exercises: [
-      { name: "Deadlift", sets: 3, reps: 5, category: "Back" },
-      { name: "Pull-ups", sets: 3, reps: 8, category: "Back" }
-    ]
-  }
-];
-// ────────────────────────────────────────────────────────────────────────
 
 const { width } = Dimensions.get('window');
 const CAROUSEL_ITEM_WIDTH = Math.min(width, 672) - 32;
@@ -52,6 +29,7 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ template, isPrebuilt, onUse, onDelete }: TemplateCardProps) {
+  const { weightUnit, convertToDisplay } = useSettings();
   return (
     <View style={styles.card}>
       {/* Header */}
@@ -78,16 +56,16 @@ function TemplateCard({ template, isPrebuilt, onUse, onDelete }: TemplateCardPro
       <View style={styles.cardBody}>
         {template.exercises.slice(0, 4).map((ex, i) => (
           <View key={i} style={styles.exerciseRow}>
-            {ex.imageUrl && (
-              <Image source={{ uri: ex.imageUrl }} style={styles.exerciseImage} />
-            )}
             <View style={styles.exerciseInfo}>
               <Text style={styles.exerciseName} numberOfLines={1}>{ex.name}</Text>
-              <Text style={styles.exerciseSets}>{ex.sets} × {ex.reps}</Text>
+              <Text style={styles.exerciseSets}>
+                {ex.sets} × {ex.reps}
+                {ex.weight ? ` • ${convertToDisplay(ex.weight)}${ex.weight.toLowerCase() !== 'bodyweight' ? ` ${weightUnit}` : ''}` : ''}
+              </Text>
             </View>
             {ex.category && (
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>{ex.category}</Text>
+              <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(ex.category).bg }]}>
+                <Text style={[styles.categoryBadgeText, { color: getCategoryColor(ex.category).text }]}>{ex.category}</Text>
               </View>
             )}
           </View>
@@ -111,37 +89,42 @@ function TemplateCard({ template, isPrebuilt, onUse, onDelete }: TemplateCardPro
 // ─── Main Page ───
 export default function TemplatesPage() {
   const router = useRouter();
-  
-  const [templates, setTemplates] = useState(DUMMY_TEMPLATES);
+  const isFocused = useIsFocused();
+  const { createWorkoutFromTemplate } = useWorkouts();
+  const { starterTemplatesList, userTemplatesList, deleteTemplate } = useTemplates();
+
   const [useTemplateId, setUseTemplateId] = useState<string | null>(null);
   const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
-  
+
   // Format today's date safely natively
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
 
-  const prebuiltTemplates = templates.filter(t => PREBUILT_IDS.includes(t.id));
-  const userTemplates = templates.filter(t => !PREBUILT_IDS.includes(t.id));
+  const allTemplates = [...starterTemplatesList, ...userTemplatesList];
 
   const handleScroll = (event: any) => {
     const slideSize = CAROUSEL_ITEM_WIDTH + 16;
     const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
-    if (index !== activeCarouselIndex && index >= 0 && index < prebuiltTemplates.length) {
+    if (index !== activeCarouselIndex && index >= 0 && index < starterTemplatesList.length) {
       setActiveCarouselIndex(index);
     }
   };
 
-  const handleUseTemplate = () => {
+  const handleUseTemplate = async () => {
     if (!useTemplateId) return;
-    const template = templates.find(t => t.id === useTemplateId);
+    const template = allTemplates.find(t => t.id === useTemplateId);
     if (!template) return;
-    
-    // Simulate createWorkoutFromTemplate
-    Alert.alert("Success", `Workout "${template.name}" created!`);
-    setUseTemplateId(null);
-    router.replace('/(app)');
+
+    try {
+      await createWorkoutFromTemplate(template.name, selectedDate, template.exercises);
+      Alert.alert("Success", `Workout "${template.name}" created!`);
+      setUseTemplateId(null);
+      router.replace('/(app)');
+    } catch (e: any) {
+      Alert.alert("Error", "Failed to create workout: " + e.message);
+    }
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -150,12 +133,16 @@ export default function TemplatesPage() {
       `Delete template "${name}"?`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
-          style: "destructive", 
-          onPress: () => {
-             setTemplates(prev => prev.filter(t => t.id !== id));
-             Alert.alert("Success", "Template deleted.");
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteTemplate(id);
+              Alert.alert("Success", "Template deleted.");
+            } catch (e: any) {
+              Alert.alert("Error", "Failed to delete template: " + e.message);
+            }
           }
         }
       ]
@@ -165,36 +152,37 @@ export default function TemplatesPage() {
   const openUseDialog = (id: string) => {
     setUseTemplateId(id);
     const d = new Date();
-    setSelectedDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+    setSelectedDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
   };
 
-  const selectedTemplate = templates.find(t => t.id === useTemplateId);
+  const selectedTemplate = allTemplates.find(t => t.id === useTemplateId);
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        
+      <ScrollView key={isFocused ? 'focused' : 'not-focused'} contentContainerStyle={styles.content}>
+
         {/* ── Pre-built Templates Horizontal Scroll (replacing Web Carousel) ── */}
-        {prebuiltTemplates.length > 0 && (
+        {starterTemplatesList.length > 0 && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
+            <Animated.View entering={FadeInLeft.delay(0).duration(500).springify()} style={styles.sectionHeader}>
               <FontAwesome5 name="magic" size={12} color="#030213" style={{ marginRight: 8 }} />
               <Text style={styles.sectionTitle}>Starter Templates</Text>
               <View style={styles.badgeSolid}>
                 <Text style={styles.badgeSolidText}>Built-in</Text>
               </View>
-            </View>
+            </Animated.View>
 
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              snapToInterval={CAROUSEL_ITEM_WIDTH + 16} 
-              decelerationRate="fast" 
+            <Animated.ScrollView
+              horizontal
+              entering={FadeInRight.delay(100).duration(500).springify()}
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={CAROUSEL_ITEM_WIDTH + 16}
+              decelerationRate="fast"
               contentContainerStyle={styles.carouselContainer}
               onScroll={handleScroll}
               scrollEventThrottle={16}
             >
-              {prebuiltTemplates.map(template => (
+              {starterTemplatesList.map(template => (
                 <View key={template.id} style={styles.carouselSlide}>
                   <TemplateCard
                     template={template}
@@ -203,55 +191,59 @@ export default function TemplatesPage() {
                   />
                 </View>
               ))}
-            </ScrollView>
+            </Animated.ScrollView>
 
             {/* Pagination Indicators */}
-            <View style={styles.paginationContainer}>
-              {prebuiltTemplates.map((_, i) => (
-                <View 
-                  key={i} 
+            <Animated.View entering={FadeInUp.delay(200).duration(500).springify()} style={styles.paginationContainer}>
+              {starterTemplatesList.map((_, i) => (
+                <View
+                  key={i}
                   style={[
-                    styles.paginationDot, 
+                    styles.paginationDot,
                     activeCarouselIndex === i && styles.paginationDotActive
-                  ]} 
+                  ]}
                 />
               ))}
-            </View>
+            </Animated.View>
           </View>
         )}
 
         {/* ── My Templates ── */}
         <View style={styles.section}>
-          <View style={styles.myTemplatesHeader}>
-             <Text style={styles.sectionTitle}>My Templates</Text>
-             <Text style={styles.savedCountText}>{userTemplates.length} saved</Text>
-          </View>
+          <Animated.View entering={FadeInLeft.delay(300).duration(500).springify()} style={styles.myTemplatesHeader}>
+            <Text style={styles.sectionTitle}>My Templates</Text>
+            <Text style={styles.savedCountText}>{userTemplatesList.length} saved</Text>
+          </Animated.View>
 
-          {userTemplates.length === 0 ? (
-            <View style={styles.emptyState}>
+          {userTemplatesList.length === 0 ? (
+            <Animated.View entering={FadeInUp.delay(400).duration(500).springify()} style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
                 <Feather name="copy" size={32} color="#9ca3af" />
               </View>
               <Text style={styles.emptyTitle}>No custom templates yet</Text>
               <Text style={styles.emptySubtitle}>
-                Save any workout as a template using the "Save as Template" button on workout cards. Then reuse them anytime.
+                Save any workout as a template using the &quot;Save as Template&quot; button on workout cards. Then reuse them anytime.
               </Text>
-            </View>
+            </Animated.View>
           ) : (
             <View style={styles.listContainer}>
-              {userTemplates.map(template => (
-                <View key={template.id} style={{ marginBottom: 16 }}>
+              {userTemplatesList.map((template, i) => (
+                <Animated.View
+                  key={template.id}
+                  entering={FadeInUp.delay(i * 100 + 400).duration(500).springify()}
+                  style={{ marginBottom: 16 }}
+                >
                   <TemplateCard
                     template={template}
                     onUse={() => openUseDialog(template.id)}
                     onDelete={() => handleDelete(template.id, template.name)}
                   />
-                </View>
+                </Animated.View>
               ))}
             </View>
           )}
         </View>
-        
+
       </ScrollView>
 
       {/* ── Use Template Modal ── */}
@@ -259,21 +251,18 @@ export default function TemplatesPage() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create Workout from Template</Text>
-            
+
             {selectedTemplate && (
               <View style={styles.modalBody}>
                 <View style={styles.modalTemplateInfo}>
                   <Text style={styles.modalTemplateName}>{selectedTemplate.name}</Text>
                   <Text style={styles.modalTemplateDetail}>{selectedTemplate.exercises.length} exercises</Text>
                 </View>
-                
-                <Text style={styles.modalLabel}>Workout Date (YYYY-MM-DD)</Text>
-                <TextInput
-                  style={styles.modalInput}
+
+                <DatePicker
+                  label="Workout Date"
                   value={selectedDate}
-                  onChangeText={setSelectedDate}
-                  placeholder="YYYY-MM-DD"
-                  keyboardType="numeric"
+                  onChange={setSelectedDate}
                 />
               </View>
             )}
@@ -313,7 +302,7 @@ const styles = StyleSheet.create({
   emptyIconContainer: { backgroundColor: '#f3f4f6', padding: 20, borderRadius: 50, marginBottom: 16 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#0a0a0a', marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: '#717182', textAlign: 'center', maxWidth: 320, lineHeight: 20 },
-  listContainer: { },
+  listContainer: {},
   // Card
   card: { backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', backgroundColor: '#f9fafb', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
@@ -324,13 +313,12 @@ const styles = StyleSheet.create({
   deleteButton: { padding: 4 },
   cardBody: { padding: 16, gap: 12 },
   exerciseRow: { flexDirection: 'row', alignItems: 'center' },
-  exerciseImage: { width: 32, height: 32, borderRadius: 4, marginRight: 8, backgroundColor: '#f3f4f6' },
   exerciseInfo: { flex: 1 },
   exerciseName: { fontSize: 14, color: '#0a0a0a', fontWeight: '500' },
   exerciseSets: { fontSize: 12, color: '#717182', marginTop: 2 },
-  categoryBadge: { backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginLeft: 8 },
-  categoryBadgeText: { fontSize: 10, color: '#374151', fontWeight: '500' },
-  moreExercisesText: { fontSize: 12, color: '#717182', marginLeft: 40, marginTop: 4 },
+  categoryBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, marginLeft: 8 },
+  categoryBadgeText: { fontSize: 10, fontWeight: '600' },
+  moreExercisesText: { fontSize: 12, color: '#717182', marginLeft: 8, marginTop: 4 },
   cardFooter: { paddingHorizontal: 16, paddingBottom: 16 },
   useButton: { backgroundColor: '#030213', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignSelf: 'flex-start' },
   useButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },

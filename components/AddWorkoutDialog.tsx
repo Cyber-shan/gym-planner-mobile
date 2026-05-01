@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { DatePicker } from './ui/DatePicker';
 
 interface AddWorkoutDialogProps {
   open: boolean;
@@ -10,7 +11,7 @@ interface AddWorkoutDialogProps {
 export function AddWorkoutDialog({ open, onOpenChange, onAdd }: AddWorkoutDialogProps) {
   const [name, setName] = useState("");
   
-  // Simple YYYY-MM-DD local timezone initialization without date-fns
+  // Simple YYYY-MM-DD local timezone initialization
   const [date, setDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -51,11 +52,10 @@ export function AddWorkoutDialog({ open, onOpenChange, onAdd }: AddWorkoutDialog
                 </View>
                 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Date</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: '#f3f4f6', color: '#6b7280' }]}
+                  <DatePicker 
+                    label="Date"
                     value={date}
-                    editable={false}
+                    onChange={setDate}
                   />
                 </View>
               </View>
