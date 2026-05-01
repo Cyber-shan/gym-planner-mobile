@@ -1,25 +1,44 @@
 import 'react-native-url-polyfill/auto';
-import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { AppState, AppStateStatus } from 'react-native';
 
-// Replace these with your actual Supabase URL and Anon Key
-const supabaseUrl = 'https://mduhxoytsqwptyjcquff.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kdWh4b3l0c3F3cHR5amNxdWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4MzQ0MjksImV4cCI6MjA1ODQxMDQyOX0.25189131-0531-4687-8430-64457518455f';
+// Load environment variables
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+// Fail-safe check for build time
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('⚠️ Supabase environment variables are missing. Building with placeholders.');
+}
 
-AppState.addEventListener('change', (state) => {
-  if (state === 'active') {
-    supabase.auth.startAutoRefresh();
-  } else {
-    supabase.auth.stopAutoRefresh();
+const isWeb = typeof window !== 'undefined';
+
+export const supabase = createClient(
+  (supabaseUrl || 'https://placeholder.supabase.co').trim(),
+  (supabaseAnonKey || 'placeholder-key').trim(),
+  {
+    auth: {
+      storage: isWeb ? AsyncStorage : {
+        getItem: () => Promise.resolve(null),
+        setItem: () => Promise.resolve(),
+        removeItem: () => Promise.resolve(),
+      },
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
   }
-});
+);
+
+if (isWeb && typeof window !== 'undefined') {
+  AppState.addEventListener('change', (state: AppStateStatus) => {
+    if (state === 'active') {
+      supabase.auth.startAutoRefresh();
+    } else {
+      supabase.auth.stopAutoRefresh();
+    }
+  });
+}
+
+export default supabase;
