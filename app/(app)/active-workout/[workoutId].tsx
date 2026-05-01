@@ -400,7 +400,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
-    backgroundColor: '#ffffff'
+    backgroundColor: '#ffffff',
+    maxWidth: 672,
+    width: '100%',
+    alignSelf: 'center',
   },
   backButton: { padding: 4 },
   headerTitleContainer: { flex: 1, paddingHorizontal: 12 },
@@ -427,7 +430,7 @@ const styles = StyleSheet.create({
   progressBarBg: { height: 4, backgroundColor: '#f3f4f6' },
   progressBarFill: { height: 4, backgroundColor: '#10b981' },
 
-  scrollContent: { padding: 16, paddingBottom: 100 },
+  scrollContent: { padding: 16, paddingBottom: 100, maxWidth: 672, width: '100%', alignSelf: 'center' },
 
   exerciseCard: { backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 16, overflow: 'hidden' },
   exerciseCardDone: { borderColor: '#d1fae5', backgroundColor: '#f0fdf4' },
@@ -483,6 +486,8 @@ const styles = StyleSheet.create({
     bottom: 24,
     left: 16,
     right: 16,
+    maxWidth: 640,
+    alignSelf: 'center',
     backgroundColor: '#030213',
     borderRadius: 12,
     flexDirection: 'row',
@@ -501,8 +506,8 @@ const styles = StyleSheet.create({
   skipButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.1)' },
   skipButtonText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#ffffff', borderRadius: 20, padding: 24, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#ffffff', borderRadius: 20, padding: 24, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 5, width: '100%', maxWidth: 480 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '700', color: '#0a0a0a' },
   statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 20 },

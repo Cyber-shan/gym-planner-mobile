@@ -134,6 +134,9 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 672,
   },
   mainArea: {
     flex: 1,

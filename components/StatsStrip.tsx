@@ -1,7 +1,7 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { isSameWeek, parseISO, startOfDay, subDays } from 'date-fns';
 import React, { useMemo } from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSettings } from '../contexts/SettingsContext';
 
 export interface Workout {
@@ -42,13 +42,10 @@ interface StatCardProps {
   colorBg: string;
 }
 
-const { width } = Dimensions.get('window');
-// Calculate exactly 48% to leave 4% for inner spacing between the two columns
-const cardWidth = '48%';
 
 function StatCard({ icon, label, value, sub, colorBg }: StatCardProps) {
   return (
-    <View style={[styles.card, { width: cardWidth }]}>
+    <View style={[styles.card]}>
       <View style={[styles.iconContainer, { backgroundColor: colorBg }]}>
         {icon}
       </View>
@@ -222,6 +219,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    width: '48%',
+    maxWidth: 300,
   },
   iconContainer: {
     width: 36,

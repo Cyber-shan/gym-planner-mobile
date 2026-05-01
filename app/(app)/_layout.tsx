@@ -146,6 +146,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    maxWidth: 672,
+    width: '100%',
+    alignSelf: 'center',
   },
   logoButton: {
     flexDirection: 'row',
