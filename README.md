@@ -1,4 +1,4 @@
-# Gym Planner Mobile 👋
+# LogLift 👋
 
 
 A professional, high-performance gym tracking application built with **Expo** and **React Native**. Designed for serious athletes who demand a seamless, premium interface for planning and tracking their fitness journey.

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 
 type CustomUser = {
@@ -46,8 +47,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(mapUser(session?.user ?? null));
     });
 
+    // Handle deep links for authentication (e.g., password reset)
+    const handleDeepLink = async (url: string | null) => {
+      if (!url) return;
+      
+      // Supabase tokens are often in the fragment (#...)
+      const fragment = url.split('#')[1];
+      if (fragment) {
+        const params = new URLSearchParams(fragment);
+        const access_token = params.get('access_token');
+        const refresh_token = params.get('refresh_token');
+
+        if (access_token && refresh_token) {
+          await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+        }
+      }
+    };
+
+    Linking.getInitialURL().then(handleDeepLink);
+    const linkingSubscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
     return () => {
       subscription.unsubscribe();
+      linkingSubscription.remove();
     };
   }, []);
 

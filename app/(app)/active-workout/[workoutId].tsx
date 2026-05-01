@@ -350,7 +350,7 @@ export default function ActiveWorkoutPage() {
               </View>
             </View>
 
-            <Text style={styles.modalSub}>Great job! Here's a quick recap:</Text>
+            <Text style={styles.modalSub}>Great job! Here&apos;s a quick recap:</Text>
             <ScrollView style={styles.summaryList} showsVerticalScrollIndicator={false}>
               {activeExercises.map(ex => {
                 const done = ex.sets.filter(s => s.completed).length;

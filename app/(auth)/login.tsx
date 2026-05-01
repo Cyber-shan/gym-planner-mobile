@@ -105,7 +105,7 @@ export default function LoginScreen() {
             <View style={styles.iconContainer}>
               <FontAwesome5 name="dumbbell" size={24} color="white" />
             </View>
-            <Text style={styles.title}>Gym Planner</Text>
+            <Text style={styles.title}>LogLift</Text>
             <Text style={styles.subtitle}>Your digital workout notebook</Text>
           </View>
 
@@ -201,7 +201,7 @@ export default function LoginScreen() {
 
               {!isSignUp && (
                 <View style={styles.forgotPasswordContainer}>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password' as any)}>
                     <Text style={styles.forgotPasswordText}>
                       Forgot password?
                     </Text>
