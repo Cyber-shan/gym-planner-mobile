@@ -222,7 +222,7 @@ export default function TemplatesPage() {
               </View>
               <Text style={styles.emptyTitle}>No custom templates yet</Text>
               <Text style={styles.emptySubtitle}>
-                Save any workout as a template using the "Save as Template" button on workout cards. Then reuse them anytime.
+                Save any workout as a template using the &quot;Save as Template&quot; button on workout cards. Then reuse them anytime.
               </Text>
             </Animated.View>
           ) : (

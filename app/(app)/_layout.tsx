@@ -1,11 +1,9 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter, useSegments } from 'expo-router';
 import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkouts } from '../../contexts/WorkoutContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSegments } from 'expo-router';
 import ChatFAB from '../../components/ChatFAB';
 import ChatBot from '../../components/ChatBot';
 import { useState } from 'react';
@@ -54,7 +52,7 @@ export default function AppLayout() {
   
   const segments = useSegments();
   // Hide FAB if we are in the active-workout route
-  const isFABVisible = !segments.includes('active-workout');
+  const isFABVisible = !(segments as string[]).includes('active-workout');
 
   return (
     <View style={{ flex: 1 }}>
